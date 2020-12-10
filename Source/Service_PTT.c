@@ -1,5 +1,5 @@
 /**
-* PPG service source file: providing the PPG-related info and sending the PPG data packet
+* PTT service source file: providing the PTT-related info and sending the PTT data packet
 */
 
 #include "bcomdef.h"
@@ -10,81 +10,81 @@
 #include "gatt_uuid.h"
 #include "gattservapp.h"
 #include "CMUtil.h"
-#include "Service_PPG.h"
+#include "Service_PTT.h"
 
-// Position of PPG data packet in attribute array
-#define PPG_PACK_VALUE_POS            2
+// Position of PTT data packet in attribute array
+#define PTT_PACK_VALUE_POS            2
 
-// PPG service
-CONST uint8 PPGServUUID[ATT_UUID_SIZE] =
+// PTT service
+CONST uint8 PTTServUUID[ATT_UUID_SIZE] =
 { 
-  CM_UUID(PPG_SERV_UUID)
+  CM_UUID(PTT_SERV_UUID)
 };
 
-// PPG Data Packet characteristic
-CONST uint8 PPGPackUUID[ATT_UUID_SIZE] =
+// PTT Data Packet characteristic
+CONST uint8 PTTPackUUID[ATT_UUID_SIZE] =
 { 
-  CM_UUID(PPG_PACK_UUID)
+  CM_UUID(PTT_PACK_UUID)
 };
 
 // Sample rate characteristic
-CONST uint8 PPGSampleRateUUID[ATT_UUID_SIZE] =
+CONST uint8 PTTSampleRateUUID[ATT_UUID_SIZE] =
 { 
-  CM_UUID(PPG_SAMPLE_RATE_UUID)
+  CM_UUID(PTT_SAMPLE_RATE_UUID)
 };
 
-static PPGServiceCBs_t* ppgServiceCBs;
+static PTTServiceCBs_t* pttServiceCBs;
 
-// PPG Service attribute
-static CONST gattAttrType_t ppgService = { ATT_UUID_SIZE, PPGServUUID };
+// PTT Service attribute
+static CONST gattAttrType_t pttService = { ATT_UUID_SIZE, PTTServUUID };
 
-// PPG Data Packet Characteristic
+// PTT Data Packet Characteristic
 // Note: the characteristic value is not stored here
-static uint8 ppgPackProps = GATT_PROP_NOTIFY;
-static uint8 ppgPack = 0;
-static gattCharCfg_t ppgPackClientCharCfg[GATT_MAX_NUM_CONN];
+static uint8 pttPackProps = GATT_PROP_NOTIFY;
+static uint8 pttPack = 0;
+static gattCharCfg_t pttPackClientCharCfg[GATT_MAX_NUM_CONN];
 
 // Sample Rate Characteristic
-static uint8 ppgSampleRateProps = GATT_PROP_READ;
-static uint16 ppgSampleRate = 125;
+static uint8 pttSampleRateProps = GATT_PROP_READ;
+static uint16 pttSampleRate = 125;
 
 
 /*********************************************************************
  * Profile Attributes - Table
  */
 
-static gattAttribute_t PPGAttrTbl[] = 
+static gattAttribute_t PTTAttrTbl[] = 
 {
-  // PPG Service
+  // PTT Service
   { 
     { ATT_BT_UUID_SIZE, primaryServiceUUID }, /* type */
     GATT_PERMIT_READ,                         /* permissions */
     0,                                        /* handle */
-    (uint8 *)&ppgService                      /* pValue */
+    (uint8 *)&pttService                      /* pValue */
   },
 
-    // 1. PPG Data Packet Declaration
+    // 1. PTT Data Packet Declaration
     { 
       { ATT_BT_UUID_SIZE, characterUUID },
       GATT_PERMIT_READ, 
       0,
-      &ppgPackProps 
+      &pttPackProps 
     },
 
-      // PPG Data Packet Value
+      // PTT Data Packet Value
       { 
-        { ATT_UUID_SIZE, PPGPackUUID },
+        { ATT_UUID_SIZE, PTTPackUUID },
         0, 
         0, 
-        &ppgPack 
+        &pttPack 
       },
 
-      // PPG Data Packet Client Characteristic Configuration
+      // PTT Data Packet Client Characteristic Configuration
       { 
         { ATT_BT_UUID_SIZE, clientCharCfgUUID },
         GATT_PERMIT_READ | GATT_PERMIT_WRITE, 
         0, 
-        (uint8 *) &ppgPackClientCharCfg 
+        (uint8 *) &pttPackClientCharCfg 
       },   
 
     // 2. Sample Rate Declaration
@@ -92,15 +92,15 @@ static gattAttribute_t PPGAttrTbl[] =
       { ATT_BT_UUID_SIZE, characterUUID },
       GATT_PERMIT_READ, 
       0,
-      &ppgSampleRateProps 
+      &pttSampleRateProps 
     },
 
       // Sample Rate Value
       { 
-        { ATT_UUID_SIZE, PPGSampleRateUUID },
+        { ATT_UUID_SIZE, PTTSampleRateUUID },
         GATT_PERMIT_READ, 
         0, 
-        (uint8*)&ppgSampleRate 
+        (uint8*)&pttSampleRate 
       }
 };
 
@@ -110,53 +110,53 @@ static bStatus_t writeAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
                                  uint8 *pValue, uint8 len, uint16 offset );
 static void handleConnStatusCB( uint16 connHandle, uint8 changeType );
 
-// PPG Service Callbacks
-CONST gattServiceCBs_t ppgCBs =
+// PTT Service Callbacks
+CONST gattServiceCBs_t pttCBs =
 {
   readAttrCB,  // Read callback function pointer
   writeAttrCB, // Write callback function pointer
   NULL         // Authorization callback function pointer
 };
 
-bStatus_t PPG_AddService( uint32 services )
+bStatus_t PTT_AddService( uint32 services )
 {
   uint8 status = SUCCESS;
 
   // Initialize Client Characteristic Configuration attributes
-  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, ppgPackClientCharCfg );
+  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, pttPackClientCharCfg );
   
   VOID linkDB_Register(handleConnStatusCB);
 
-  if ( services & PPG_SERVICE )
+  if ( services & PTT_SERVICE )
   {
     // Register GATT attribute list and CBs with GATT Server App
-    status = GATTServApp_RegisterService( PPGAttrTbl, 
-                                          GATT_NUM_ATTRS( PPGAttrTbl ),
-                                          &ppgCBs );
+    status = GATTServApp_RegisterService( PTTAttrTbl, 
+                                          GATT_NUM_ATTRS( PTTAttrTbl ),
+                                          &pttCBs );
   }
 
   return ( status );
 }
 
-extern void PPG_RegisterAppCBs( PPGServiceCBs_t* pfnServiceCBs )
+extern void PTT_RegisterAppCBs( PTTServiceCBs_t* pfnServiceCBs )
 {
-  ppgServiceCBs = pfnServiceCBs;
+  pttServiceCBs = pfnServiceCBs;
     
   return;
 }
 
-extern bStatus_t PPG_SetParameter( uint8 param, uint8 len, void *value )
+extern bStatus_t PTT_SetParameter( uint8 param, uint8 len, void *value )
 {
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
-     case PPG_PACK_CHAR_CFG:
+     case PTT_PACK_CHAR_CFG:
       // Need connection handle
-      //PPGMeasClientCharCfg.value = *((uint16*)value);
+      //PTTMeasClientCharCfg.value = *((uint16*)value);
       break;   
       
-    case PPG_SAMPLE_RATE:
-      osal_memcpy((uint8*)&ppgSampleRate, value, len);
+    case PTT_SAMPLE_RATE:
+      osal_memcpy((uint8*)&pttSampleRate, value, len);
       break;
 
     default:
@@ -167,18 +167,18 @@ extern bStatus_t PPG_SetParameter( uint8 param, uint8 len, void *value )
   return ( ret );
 }
 
-extern bStatus_t PPG_GetParameter( uint8 param, void *value )
+extern bStatus_t PTT_GetParameter( uint8 param, void *value )
 {
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
-    case PPG_PACK_CHAR_CFG:
+    case PTT_PACK_CHAR_CFG:
       // Need connection handle
-      //*((uint16*)value) = PPGMeasClientCharCfg.value;
+      //*((uint16*)value) = PTTMeasClientCharCfg.value;
       break; 
       
-    case PPG_SAMPLE_RATE:
-      osal_memcpy(value, (uint8*)&ppgSampleRate, 2);
+    case PTT_SAMPLE_RATE:
+      osal_memcpy(value, (uint8*)&pttSampleRate, 2);
       break;   
 
     default:
@@ -189,15 +189,15 @@ extern bStatus_t PPG_GetParameter( uint8 param, void *value )
   return ( ret );
 }
 
-extern bStatus_t PPG_PacketNotify( uint16 connHandle, attHandleValueNoti_t *pNoti )
+extern bStatus_t PTT_PacketNotify( uint16 connHandle, attHandleValueNoti_t *pNoti )
 {
-  uint16 value = GATTServApp_ReadCharCfg( connHandle, ppgPackClientCharCfg );
+  uint16 value = GATTServApp_ReadCharCfg( connHandle, pttPackClientCharCfg );
 
   // If notifications enabled
   if ( value & GATT_CLIENT_CFG_NOTIFY )
   {
     // Set the handle
-    pNoti->handle = PPGAttrTbl[PPG_PACK_VALUE_POS].handle;
+    pNoti->handle = PTTAttrTbl[PTT_PACK_VALUE_POS].handle;
   
     // Send the notification
     return GATT_Notification( connHandle, pNoti, FALSE );
@@ -226,7 +226,7 @@ static uint8 readAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
 
   switch(uuid)
   {
-    case PPG_SAMPLE_RATE_UUID:
+    case PTT_SAMPLE_RATE_UUID:
       *pLen = 2;
        VOID osal_memcpy( pValue, pAttr->pValue, 2 );
        break;
@@ -260,9 +260,9 @@ static bStatus_t writeAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
       {
         uint16 charCfg = BUILD_UINT16( pValue[0], pValue[1] );
 
-        (ppgServiceCBs->pfnPpgServiceCB)( (charCfg == GATT_CFG_NO_OPERATION) ?
-                                PPG_PACK_NOTI_DISABLED :
-                                PPG_PACK_NOTI_ENABLED );
+        (pttServiceCBs->pfnPttServiceCB)( (charCfg == GATT_CFG_NO_OPERATION) ?
+                                PTT_PACK_NOTI_DISABLED :
+                                PTT_PACK_NOTI_ENABLED );
       }
       break;
  
@@ -284,7 +284,7 @@ static void handleConnStatusCB( uint16 connHandle, uint8 changeType )
          ( ( changeType == LINKDB_STATUS_UPDATE_STATEFLAGS ) && 
            ( !linkDB_Up( connHandle ) ) ) )
     { 
-      GATTServApp_InitCharCfg( connHandle, ppgPackClientCharCfg );
+      GATTServApp_InitCharCfg( connHandle, pttPackClientCharCfg );
     }
   }
 }

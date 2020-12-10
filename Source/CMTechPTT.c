@@ -1,5 +1,5 @@
 /**************************************************************************************************
-* CMTechPPG.c: main application source file
+* CMTechPTT.c: main application source file
 **************************************************************************************************/
 
 /*********************************************************************
@@ -31,35 +31,35 @@
 
 #include "hal_i2c.h"
 #include "CMUtil.h"
-#include "CMTechPPG.h"
+#include "CMTechPTT.h"
 #include "Service_DevInfo.h"
-#include "Service_PPG.h"
-#include "App_PPGFunc.h"
+#include "Service_PTT.h"
+#include "App_PTTFunc.h"
 #include "Dev_MAX30102.h"
 
 #define ADVERTISING_INTERVAL 320 // ad interval, units of 0.625ms
 #define ADVERTISING_DURATION 2000 // ad duration, units of ms
 #define ADVERTISING_OFFTIME 8000 // ad offtime to wait for a next ad, units of ms
 
-// connection parameter in PPG mode
-#define PPG_MODE_MIN_INTERVAL 16  // unit: 1.25ms
-#define PPG_MODE_MAX_INTERVAL 32  // unit: 1.25ms
-#define PPG_MODE_SLAVE_LATENCY 4
-#define PPG_MODE_CONNECT_TIMEOUT 100 // unit: 10ms, If no connection event occurred during this timeout, the connect will be shut down.
+// connection parameter in PTT mode
+#define PTT_MODE_MIN_INTERVAL 16  // unit: 1.25ms
+#define PTT_MODE_MAX_INTERVAL 32  // unit: 1.25ms
+#define PTT_MODE_SLAVE_LATENCY 4
+#define PTT_MODE_CONNECT_TIMEOUT 100 // unit: 10ms, If no connection event occurred during this timeout, the connect will be shut down.
 
 #define CONN_PAUSE_PERIPHERAL 4  // the pause time from the connection establishment to the update of the connection parameters
 
 #define INVALID_CONNHANDLE 0xFFFF // invalid connection handle
-#define STATUS_PPG_STOP 0x00     // PPG sampling stopped status
-#define STATUS_PPG_START 0x01    // PPG sampling started status
+#define STATUS_PTT_STOP 0x00     // PTT sampling stopped status
+#define STATUS_PTT_START 0x01    // PTT sampling started status
 
 
 static uint8 taskID;   
 static uint16 gapConnHandle = INVALID_CONNHANDLE;
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
-static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "KM PPG"; // GGS device name
-static uint8 status = STATUS_PPG_STOP; // PPG sampling status
-static uint16 ppgSampleRate = 125; // PPG real sample rate
+static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "KM PTT"; // GGS device name
+static uint8 status = STATUS_PTT_STOP; // PTT sampling status
+static uint16 pttSampleRate = 125; // PTT real sample rate
 
 // advertise data
 static uint8 advertData[] = 
@@ -71,8 +71,8 @@ static uint8 advertData[] =
   // service UUID
   0x03,   // length of this data
   GAP_ADTYPE_16BIT_MORE,
-  LO_UINT16( PPG_SERV_UUID ),
-  HI_UINT16( PPG_SERV_UUID ),
+  LO_UINT16( PTT_SERV_UUID ),
+  HI_UINT16( PTT_SERV_UUID ),
 
 };
 
@@ -89,7 +89,7 @@ static uint8 scanResponseData[] =
 };
 
 static void gapStateCB( gaprole_States_t newState ); // gap state callback function
-static void ppgServiceCB( uint8 event ); // PPG service callback function
+static void pttServiceCB( uint8 event ); // PTT service callback function
 
 // GAP Role callback struct
 static gapRolesCBs_t gapStateCBs =
@@ -104,18 +104,18 @@ static gapBondCBs_t bondCBs =
   NULL                    // Pairing state callback
 };
 
-// PPG service callback struct
-static PPGServiceCBs_t ppgServCBs =
+// PTT service callback struct
+static PTTServiceCBs_t pttServCBs =
 {
-  ppgServiceCB    
+  pttServiceCB    
 };
 
 static void processOSALMsg( osal_event_hdr_t *pMsg ); // OSAL message process function
 static void initIOPin(); // initialize IO pins
-static void startPpgSampling( void ); // start PPG sampling
-static void stopPpgSampling( void ); // stop PPG sampling
+static void startPttSampling( void ); // start PTT sampling
+static void stopPttSampling( void ); // stop PTT sampling
 
-extern void PPG_Init( uint8 task_id )
+extern void PTT_Init( uint8 task_id )
 { 
   taskID = task_id;
   
@@ -141,10 +141,10 @@ extern void PPG_Init( uint8 task_id )
     GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, CONN_PAUSE_PERIPHERAL ); 
     
     // set the connection parameter
-    uint16 desired_min_interval = PPG_MODE_MIN_INTERVAL;
-    uint16 desired_max_interval = PPG_MODE_MAX_INTERVAL;
-    uint16 desired_slave_latency = PPG_MODE_SLAVE_LATENCY;
-    uint16 desired_conn_timeout = PPG_MODE_CONNECT_TIMEOUT; 
+    uint16 desired_min_interval = PTT_MODE_MIN_INTERVAL;
+    uint16 desired_max_interval = PTT_MODE_MAX_INTERVAL;
+    uint16 desired_slave_latency = PTT_MODE_SLAVE_LATENCY;
+    uint16 desired_conn_timeout = PTT_MODE_CONNECT_TIMEOUT; 
     GAPRole_SetParameter( GAPROLE_MIN_CONN_INTERVAL, sizeof( uint16 ), &desired_min_interval );
     GAPRole_SetParameter( GAPROLE_MAX_CONN_INTERVAL, sizeof( uint16 ), &desired_max_interval );
     GAPRole_SetParameter( GAPROLE_SLAVE_LATENCY, sizeof( uint16 ), &desired_slave_latency );
@@ -176,12 +176,12 @@ extern void PPG_Init( uint8 task_id )
   GATTServApp_AddService( GATT_ALL_SERVICES ); // GATT attributes
   DevInfo_AddService( ); // device information service
   
-  PPG_AddService(GATT_ALL_SERVICES); // ppg service
-  PPG_RegisterAppCBs( &ppgServCBs );  
+  PTT_AddService(GATT_ALL_SERVICES); // ptt service
+  PTT_RegisterAppCBs( &pttServCBs );  
   
-  // set sample rate in ppg service
+  // set sample rate in ptt service
   {
-    PPG_SetParameter( PPG_SAMPLE_RATE, sizeof ( uint16 ), &ppgSampleRate ); 
+    PTT_SetParameter( PTT_SAMPLE_RATE, sizeof ( uint16 ), &pttSampleRate ); 
   }
   
   //在这里初始化GPIO
@@ -190,12 +190,12 @@ extern void PPG_Init( uint8 task_id )
   //第三：对于会用到的IO，就要根据具体外部电路连接情况进行有效设置，防止耗电
   initIOPin();
   
-  PPGFunc_Init(taskID, 1000); // max30102 sample rate = 1kHz
+  PTTFunc_Init(taskID, 1000); // max30102 sample rate = 1kHz
   
   HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );  
 
   // 启动设备
-  osal_set_event( taskID, PPG_START_DEVICE_EVT );
+  osal_set_event( taskID, PTT_START_DEVICE_EVT );
 }
 
 // 初始化IO管脚
@@ -219,7 +219,7 @@ static void initIOPin()
   
 }
 
-extern uint16 PPG_ProcessEvent( uint8 task_id, uint16 events )
+extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
 {
   VOID task_id; // OSAL required parameter that isn't used in this function
 
@@ -239,7 +239,7 @@ extern uint16 PPG_ProcessEvent( uint8 task_id, uint16 events )
     return (events ^ SYS_EVENT_MSG);
   }
 
-  if ( events & PPG_START_DEVICE_EVT )
+  if ( events & PTT_START_DEVICE_EVT )
   {    
     // Start the Device
     VOID GAPRole_StartDevice( &gapStateCBs );
@@ -248,19 +248,19 @@ extern uint16 PPG_ProcessEvent( uint8 task_id, uint16 events )
     VOID GAPBondMgr_Register( &bondCBs );
     
   
-    //startPpgSampling();
+    //startPttSampling();
 
-    return ( events ^ PPG_START_DEVICE_EVT );
+    return ( events ^ PTT_START_DEVICE_EVT );
   }
   
-  if ( events & PPG_PACKET_NOTI_EVT )
+  if ( events & PTT_PACKET_NOTI_EVT )
   {
     if (gapProfileState == GAPROLE_CONNECTED)
     {
-      PPGFunc_SendPpgPacket(gapConnHandle);
+      PTTFunc_SendPttPacket(gapConnHandle);
     }
 
-    return (events ^ PPG_PACKET_NOTI_EVT);
+    return (events ^ PTT_PACKET_NOTI_EVT);
   } 
   
   // Discard unknown events
@@ -289,7 +289,7 @@ static void gapStateCB( gaprole_States_t newState )
   else if(gapProfileState == GAPROLE_CONNECTED && 
             newState != GAPROLE_CONNECTED)
   {
-    stopPpgSampling();
+    stopPttSampling();
     //initIOPin();
     //ADS1x9x_PowerDown();
   }
@@ -315,36 +315,36 @@ static void gapStateCB( gaprole_States_t newState )
   gapProfileState = newState;
 }
 
-// start PPG Sampling
-static void startPpgSampling( void )
+// start PTT Sampling
+static void startPttSampling( void )
 {  
-  if(status == STATUS_PPG_STOP) 
+  if(status == STATUS_PTT_STOP) 
   {
-    status = STATUS_PPG_START;
-    PPGFunc_SetPpgSampling(true);
+    status = STATUS_PTT_START;
+    PTTFunc_SetPttSampling(true);
   }
 }
 
-// stop PPG Sampling
-static void stopPpgSampling( void )
+// stop PTT Sampling
+static void stopPttSampling( void )
 {  
-  if(status == STATUS_PPG_START)
+  if(status == STATUS_PTT_START)
   {
-    status = STATUS_PPG_STOP;
-    PPGFunc_SetPpgSampling(false);
+    status = STATUS_PTT_STOP;
+    PTTFunc_SetPttSampling(false);
   }
 }
 
-static void ppgServiceCB( uint8 event )
+static void pttServiceCB( uint8 event )
 {
   switch (event)
   {
-    case PPG_PACK_NOTI_ENABLED:
-      startPpgSampling();
+    case PTT_PACK_NOTI_ENABLED:
+      startPttSampling();
       break;
         
-    case PPG_PACK_NOTI_DISABLED:
-      stopPpgSampling();
+    case PTT_PACK_NOTI_DISABLED:
+      stopPttSampling();
       break;
       
     default:
