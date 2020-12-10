@@ -130,9 +130,6 @@ static const uint8 SLOT_RED_PILOT =			0x05;
 static const uint8 SLOT_IR_PILOT = 			0x06;
 static const uint8 SLOT_GREEN_PILOT = 		0x07;
 
-static uint8 activeLED = 1; // 激活的LED数，HR模式只有1个RED LED激活，SPO2模式有2个LED激活。用在读取sample中计算需要读取的byte数
-
-
 
 static MAX30102_DataCB_t pfnMAXDataCB; // callback function processing data 
 
@@ -185,13 +182,7 @@ extern void MAX30102_Setup(uint8 mode, uint16 sampleRate)
   
   softReset(); //Reset all configuration, threshold, and data registers to POR values
   
-  if(mode == HR_MODE) {
-    setLEDMode(MAX30102_MODE_REDONLY); //Red only
-    activeLED = 1;
-  } else {
-    setLEDMode(MAX30102_MODE_REDIRONLY); //Red and IR
-    activeLED = 2;
-  }
+  setLEDMode(MAX30102_MODE_REDONLY); //Red only
   
   setFIFOAverage(MAX30102_SAMPLEAVG_8); // 8 samples averaging
   
@@ -482,7 +473,7 @@ __interrupt void PORT0_ISR(void)
         if(num < 0) num += 32;
         if(num > 1){
           uint8 buff[6] = {0};
-          readMultipleBytes(MAX30102_FIFODATA, activeLED*3, buff);
+          readMultipleBytes(MAX30102_FIFODATA, 3, buff);
         }
         readOneSampleData();
       }
@@ -506,13 +497,8 @@ static void readOneSampleData()
   //writeOneByte(MAX30102_FIFOREADPTR, ptWrite);
   
   uint8 buff[6] = {0};
-  readMultipleBytes(MAX30102_FIFODATA, activeLED*3, buff);
+  readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
   uint16 red = (uint16)(num32>>1);
-  uint16 ir = 0;
-  if(activeLED > 1) {
-    num32 = BUILD_UINT32(buff[5], buff[4], buff[3], 0x00);
-    ir = (uint16)(num32>>1);
-  }
-  pfnMAXDataCB(red, ir, activeLED);
+  pfnMAXDataCB(red, 0);
 }

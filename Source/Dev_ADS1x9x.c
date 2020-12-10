@@ -107,7 +107,7 @@ extern void ADS1x9x_PowerUp(void)
   ADS_RST_HIGH();    //PWDN/RESET ∏ﬂµÁ∆Ω
   delayus(50);
   
-  setRegsAsNormalECGSignal(SAMPLERATE);
+  setRegsAsNormalECGSignal(125);
 }
 
 // start continuous sampling
@@ -222,9 +222,9 @@ extern void ADS1x9x_WriteRegister(uint8 address, uint8 onebyte)
 // set registers as normal ecg mode
 static void setRegsAsNormalECGSignal(uint16 sampleRate)
 {
-  if(sampleRate == HR_MODE_SAMPLERATE)
+  if(sampleRate == 125)
     ADS1x9x_WriteAllRegister(ECGRegs125);
-  if(sampleRate == ECG_MODE_SAMPLERATE)
+  else 
     ADS1x9x_WriteAllRegister(ECGRegs250);
 }
 
@@ -251,55 +251,15 @@ __interrupt void PORT0_ISR(void)
     P0IFG &= 0xFD; //~(1<<1);   //clear P0_1 IFG 
     P0IF = 0;   //clear P0 interrupt flag
 
-#if defined(ADS1291)    
-    readOneSampleUsingADS1291();
-#elif defined(ADS1191)
     readOneSampleUsingADS1191();
-#endif
   //}
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  
 }
 
-// ADS1291: high precise(24bits) chip with only one channel
-/*
-static void readOneSampleUsingADS1291(void)
-{  
-  ADS_CS_LOW();
-  uint8 data[3]; // received channel 1 data buffer
-  
-  SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  SPI_ADS_SendByte(ADS_DUMMY_CHAR);  
-  
-  data[2] = SPI_ADS_SendByte(ADS_DUMMY_CHAR);   //MSB
-  data[1] = SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  data[0] = SPI_ADS_SendByte(ADS_DUMMY_CHAR);   //LSB
-  
-  ADS_CS_HIGH();
-  
-  int16 ecg = (int16)((data[1] & 0x00FF) | ((data[2] & 0x00FF) << 8));
-   
-  pfnADSDataCB(ecg);
-}
-*/
-
 // ADS1191: low precise(16bits) chip with only one channel
 static void readOneSampleUsingADS1191(void)
 {  
-  //ADS_CS_LOW();
-  
-  //SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  //SPI_ADS_SendByte(ADS_DUMMY_CHAR);  
-  
-  //data[1] = SPI_ADS_SendByte(ADS_DUMMY_CHAR);   //MSB
-  //data[0] = SPI_ADS_SendByte(ADS_DUMMY_CHAR);   //LSB
-  
-  //SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  //SPI_ADS_SendByte(ADS_DUMMY_CHAR);
-  
-  //ADS_CS_HIGH();
-  
   SPI_SEND(ADS_DUMMY_CHAR); 
   while (!U1TX_BYTE);
   U1TX_BYTE = 0;

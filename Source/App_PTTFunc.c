@@ -24,7 +24,7 @@ static uint8* pPttBuff;
 static attHandleValueNoti_t pttNoti;
 
 // the callback function to process the PTT data from MAX30102
-static void processPttSignal(uint16 red, uint16 ir, uint8 activeLED);
+static void processPttSignal(uint16 ppg, int16 ecg);
 
 extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
 { 
@@ -59,15 +59,15 @@ extern void PTTFunc_SendPttPacket(uint16 connHandle)
   PTT_PacketNotify( connHandle, &pttNoti );
 }
 
-static void processPttSignal(uint16 red, uint16 ir, uint8 activeLED)
+static void processPttSignal(uint16 ppg, int16 ecg)
 {
   if(pPttBuff == pttBuff)
   {
     *pPttBuff++ = pckNum;
     pckNum = (pckNum == PTT_MAX_PACK_NUM) ? 0 : pckNum+1;
   }
-  *pPttBuff++ = LO_UINT16(red);  
-  *pPttBuff++ = HI_UINT16(red);
+  *pPttBuff++ = LO_UINT16(ppg);  
+  *pPttBuff++ = HI_UINT16(ppg);
   
   if(pPttBuff-pttBuff >= PTT_PACK_BYTE_NUM)
   {

@@ -9,7 +9,7 @@
 #define HR_MODE 0x00
 #define SPO2_MODE 0x01
 
-typedef void (*MAX30102_DataCB_t)(uint16 red, uint16 ir, uint8 activeLED); // callback function to handle one sample data
+typedef void (*MAX30102_DataCB_t)(uint16 ppg, int16 ecg); // callback function to handle one sample data
 
 extern void MAX30102_Init(MAX30102_DataCB_t pfnCB);
 
