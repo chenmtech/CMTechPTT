@@ -60,7 +60,6 @@ const static uint8 ECGRegs250[12] = {
   0x0C                      //
 };
 
-static ADS_DataCB_t pfnADSDataCB; // callback function processing data 
 //static uint8 data[2];
 //static int16 * pEcg = (int16*)data;
 static int ecgData;
@@ -71,10 +70,8 @@ static void setRegsAsNormalECGSignal(uint16 sampleRate); // set registers as out
 static void readOneSampleUsingADS1191(void); // read one data with ADS1191
 
 // ADS init
-extern void ADS1x9x_Init(ADS_DataCB_t pfnADS_DataCB_t)
+extern void ADS1x9x_Init()
 {
-  pfnADSDataCB = pfnADS_DataCB_t;
-  
   // init ADS1x9x chip
   SPI_ADS_Init();
   
@@ -241,25 +238,8 @@ static void execute(uint8 cmd)
   ADS_CS_HIGH();
 }
 
-#pragma vector = P0INT_VECTOR
-__interrupt void PORT0_ISR(void)
-{ 
-  HAL_ENTER_ISR();  // Hold off interrupts.
-  
-  //if(P0IFG & 0x02)  //P0_1ÖÐ¶Ï
-  //{
-    P0IFG &= 0xFD; //~(1<<1);   //clear P0_1 IFG 
-    P0IF = 0;   //clear P0 interrupt flag
-
-    readOneSampleUsingADS1191();
-  //}
-  
-  HAL_EXIT_ISR();   // Re-enable interrupts.  
-}
-
-// ADS1191: low precise(16bits) chip with only one channel
-static void readOneSampleUsingADS1191(void)
-{  
+extern bool ADS1x9x_ReadEcgSample(int16* pData)
+{
   SPI_SEND(ADS_DUMMY_CHAR); 
   while (!U1TX_BYTE);
   U1TX_BYTE = 0;
@@ -277,6 +257,5 @@ static void readOneSampleUsingADS1191(void)
   while (!U1TX_BYTE);
   U1TX_BYTE = 0;  
   *((uint8*)&ecgData) = U1DBUF;  
-   
-  pfnADSDataCB(ecgData);
+  
 }

@@ -50,10 +50,7 @@
 #define ADS1x9x_REG_RESP2               (0x000Au)
 #define ADS1x9x_REG_GPIO                (0x000Bu)
 
-typedef void (*ADS_DataCB_t)(int16 data); // callback function to handle one sample data
-
-
-extern void ADS1x9x_Init(ADS_DataCB_t pfnADS_DataCB_t); // init
+extern void ADS1x9x_Init(); // init
 extern void ADS1x9x_PowerDown(); // power down
 extern void ADS1x9x_WakeUp(void); // wakeup
 extern void ADS1x9x_StandBy(void); // standby
@@ -65,5 +62,6 @@ extern void ADS1x9x_ReadMultipleRegister(uint8 beginaddr, uint8 * pRegs, uint8 l
 extern void ADS1x9x_WriteRegister(uint8 address, uint8 onebyte); // write one register
 extern void ADS1x9x_WriteMultipleRegister(uint8 beginaddr, const uint8 * pRegs, uint8 len); // write multi registers
 extern void ADS1x9x_WriteAllRegister(const uint8 * pRegs); // write all registers
+extern bool ADS1x9x_ReadEcgSample(int16* pData);
 
 #endif

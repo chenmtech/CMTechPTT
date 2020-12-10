@@ -9,9 +9,7 @@
 #define HR_MODE 0x00
 #define SPO2_MODE 0x01
 
-typedef void (*MAX30102_DataCB_t)(uint16 ppg, int16 ecg); // callback function to handle one sample data
-
-extern void MAX30102_Init(MAX30102_DataCB_t pfnCB);
+extern void MAX30102_Init();
 
 extern void MAX30102_Setup(uint8 mode, uint16 sampleRate);
 
@@ -20,5 +18,7 @@ extern void MAX30102_WakeUp();
 extern void MAX30102_Shutdown();
 
 extern float MAX30102_ReadTemperature();
-#endif
 
+extern bool MAX30102_ReadPpgSample(uint16* pData);
+
+#endif

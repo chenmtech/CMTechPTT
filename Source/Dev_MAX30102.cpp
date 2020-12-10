@@ -131,9 +131,6 @@ static const uint8 SLOT_IR_PILOT = 			0x06;
 static const uint8 SLOT_GREEN_PILOT = 		0x07;
 
 
-static MAX30102_DataCB_t pfnMAXDataCB; // callback function processing data 
-
-
 static void setINTPin();
 static void writeOneByte(uint8 reg, uint8 data);
 static uint8 readOneByte(uint8 reg);
@@ -161,10 +158,8 @@ static void readOneSampleData();
 /*
 * 公共函数
 */
-extern void MAX30102_Init(MAX30102_DataCB_t pfnCB)
+extern void MAX30102_Init()
 {
-  pfnMAXDataCB = pfnCB;
-  
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   delayus(2000);
   
@@ -453,38 +448,25 @@ static void setINTPin()
   P0IE = 1;           // P0 interrupt enable  
 }
 
-#pragma vector = P0INT_VECTOR
-__interrupt void PORT0_ISR(void)
-{ 
-  HAL_ENTER_ISR();  // Hold off interrupts.
+extern bool MAX30102_ReadPpgSample(uint16* pData)
+{
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  uint8 intStatus1 = getINT1();
   
-  // P0_2中断
-  if((P0IFG & 0x04) != 0) { 
-  
-    IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-    uint8 intStatus1 = getINT1();
-    
-    // data ready interrupt
-    if((intStatus1 & 0x40) != 0) {
-      uint8 ptRead = getReadPointer();
-      uint8 ptWrite = getWritePointer();
-      if(ptRead != ptWrite) {
-        int8 num = ptWrite-ptRead;
-        if(num < 0) num += 32;
-        if(num > 1){
-          uint8 buff[6] = {0};
-          readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-        }
-        readOneSampleData();
+  // data ready interrupt
+  if((intStatus1 & 0x40) != 0) {
+    uint8 ptRead = getReadPointer();
+    uint8 ptWrite = getWritePointer();
+    if(ptRead != ptWrite) {
+      int8 num = ptWrite-ptRead;
+      if(num < 0) num += 32;
+      if(num > 1){
+        uint8 buff[6] = {0};
+        readMultipleBytes(MAX30102_FIFODATA, 3, buff);
       }
+      readOneSampleData();
     }
-    
-    P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
   }
-  
-  P0IF = 0;           //clear P0 interrupt flag
-  
-  HAL_EXIT_ISR();   // Re-enable interrupts.  
 }
 
 // 读取最新的一个sample，可能包括RED/IR LED通道数据，由activeLED表示通道数
