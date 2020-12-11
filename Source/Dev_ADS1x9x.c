@@ -62,20 +62,15 @@ const static uint8 ECGRegs250[12] = {
 
 //static uint8 data[2];
 //static int16 * pEcg = (int16*)data;
-static int ecgData;
 
 static void execute(uint8 cmd); // execute command
 static void setRegsAsNormalECGSignal(uint16 sampleRate); // set registers as outputing normal ECG signal
-//static void readOneSampleUsingADS1291(void); // read one data with ADS1291
-static void readOneSampleUsingADS1191(void); // read one data with ADS1191
 
 // ADS init
 extern void ADS1x9x_Init()
 {
   // init ADS1x9x chip
   SPI_ADS_Init();
-  
-  ADS1x9x_PowerDown(); 
 }
 
 extern void ADS1x9x_PowerDown()
@@ -251,11 +246,12 @@ extern bool ADS1x9x_ReadEcgSample(int16* pData)
   SPI_SEND(ADS_DUMMY_CHAR); 
   while (!U1TX_BYTE);
   U1TX_BYTE = 0;
-  *((uint8*)&ecgData+1) = U1DBUF;
+  *((uint8*)pData+1) = U1DBUF;
   
   SPI_SEND(ADS_DUMMY_CHAR); 
   while (!U1TX_BYTE);
   U1TX_BYTE = 0;  
-  *((uint8*)&ecgData) = U1DBUF;  
+  *((uint8*)pData) = U1DBUF;  
   
+  return true;  
 }

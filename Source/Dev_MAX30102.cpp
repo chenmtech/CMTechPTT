@@ -152,7 +152,7 @@ static void setPulseWidth(uint8 pulseWidth);
 static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
 static uint8 readPartID();
-static void readOneSampleData();
+static uint16 readOneSampleData();
 
 
 /*
@@ -454,7 +454,7 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
   uint8 intStatus1 = getINT1();
   
   // data ready interrupt
-  if((intStatus1 & 0x40) != 0) {
+  if(intStatus1 & 0x40) {
     uint8 ptRead = getReadPointer();
     uint8 ptWrite = getWritePointer();
     if(ptRead != ptWrite) {
@@ -464,14 +464,16 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
         uint8 buff[6] = {0};
         readMultipleBytes(MAX30102_FIFODATA, 3, buff);
       }
-      readOneSampleData();
+      *pData = readOneSampleData();
+      return true;
     }
   }
+  return false;
 }
 
 // 读取最新的一个sample，可能包括RED/IR LED通道数据，由activeLED表示通道数
 // 每个通道数据都转化为uint16类型
-static void readOneSampleData()
+static uint16 readOneSampleData()
 {
   // 将read pointer指向write pointer后一个，即只读取最新的一个样本数据
   //uint8 ptWrite = readOneByte(MAX30102_FIFOWRITEPTR);
@@ -482,5 +484,5 @@ static void readOneSampleData()
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
   uint16 red = (uint16)(num32>>1);
-  pfnMAXDataCB(red, 0);
+  return red;
 }

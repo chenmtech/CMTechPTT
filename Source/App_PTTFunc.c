@@ -25,8 +25,13 @@ static uint8* pPttBuff;
 // ptt packet structure sent out
 static attHandleValueNoti_t pttNoti;
 
+static bool ecgOk = false;
+static bool ppgOk = false;
+static int16 ecg = 0;
+static uint16 ppg = 0;
+
 // the callback function to process the PTT data from MAX30102
-static void processPttSignal(uint16 ppg, int16 ecg);
+static void processPttSignal(int16 ecg, uint16 ppg);
 
 extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
 { 
@@ -41,6 +46,8 @@ extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
   // initilize the ADS1x9x
   ADS1x9x_Init(); 
   delayus(1000);
+  ADS1x9x_PowerDown(); 
+  delayus(1000);
 }
 
 extern void PTTFunc_SetPttSampling(bool start)
@@ -50,22 +57,25 @@ extern void PTTFunc_SetPttSampling(bool start)
   osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
   if(start)
   {
+    ecgOk = false;
+    ppgOk = false;
+    ecg = 0;
+    ppg = 0;
+    
+    MAX30102_WakeUp();
+    
     ADS1x9x_WakeUp(); 
     // 这里一定要延时，否则容易死机
     delayus(1000);
     ADS1x9x_StartConvert();
     delayus(1000);
-    
-    MAX30102_WakeUp();
-    delayus(1000);
   } 
   else
   {
+    MAX30102_Shutdown();
+    
     ADS1x9x_StopConvert();
     ADS1x9x_StandBy();
-    delayus(2000);
-    
-    MAX30102_Shutdown();
     delayus(2000);
   }
 }
@@ -81,21 +91,41 @@ __interrupt void PORT0_ISR(void)
 { 
   HAL_ENTER_ISR();  // Hold off interrupts.
   
+  /*
   // P0_1中断, 即ADS1191数据中断
+  if(P0IFG & 0x02)
+  {
+    ecgOk = ADS1x9x_ReadEcgSample(&ecg);
+    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
+  }
+  
+  // P0_2中断, 即MAX30102数据中断  
+  if(P0IFG & 0x04)
+  {
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
+    P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
+  }
+  
+  P0IF = 0;           //clear P0 interrupt flag
+  
+  if(ecgOk && ppgOk)
+  {
+    processPttSignal(ppg, ecg);
+  }
+  */
+  
   // P0_2中断, 即MAX30102数据中断
   // 两个中断必须都触发，才读取两种数据，实现数据同步
   if((P0IFG & 0x02) && (P0IFG & 0x04))
   {
-    int16 ecg = 0;
-    bool ecgOk = ADS1x9x_ReadEcgSample(&ecg);
+    ecgOk = ADS1x9x_ReadEcgSample(&ecg);
     P0IFG &= ~(1<<1);   //clear P0_1 IFG 
     
-    uint16 ppg = 0;
-    bool ppgOk = MAX30102_ReadPpgSample(&ppg);
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
     P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
     
     if(ecgOk && ppgOk) {
-      processPttSignal(ppg, ecg);
+      processPttSignal(ecg, ppg);
     }
   
     P0IF = 0;           //clear P0 interrupt flag
@@ -104,17 +134,17 @@ __interrupt void PORT0_ISR(void)
   HAL_EXIT_ISR();   // Re-enable interrupts.  
 }
 
-static void processPttSignal(uint16 ppg, int16 ecg)
+static void processPttSignal(int16 ecg, uint16 ppg)
 {
   if(pPttBuff == pttBuff)
   {
     *pPttBuff++ = pckNum;
     pckNum = (pckNum == PTT_MAX_PACK_NUM) ? 0 : pckNum+1;
   }
-  *pPttBuff++ = LO_UINT16(ppg);  
-  *pPttBuff++ = HI_UINT16(ppg);
-  *pPttBuff++ = LO_UINT16(ecg);
+  *pPttBuff++ = LO_UINT16(ecg);  
   *pPttBuff++ = HI_UINT16(ecg);
+  *pPttBuff++ = LO_UINT16(ppg);
+  *pPttBuff++ = HI_UINT16(ppg);
   
   if(pPttBuff-pttBuff >= PTT_PACK_BYTE_NUM)
   {
