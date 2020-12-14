@@ -25,8 +25,6 @@ static uint8* pPttBuff;
 // ptt packet structure sent out
 static attHandleValueNoti_t pttNoti;
 
-static bool ecgOk = false;
-static bool ppgOk = false;
 static int16 ecg = 0;
 static uint16 ppg = 0;
 
@@ -39,9 +37,12 @@ extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
   
   // initilize the MAX30102
   MAX30102_Init();
-  MAX30102_Setup(HR_MODE, sampleRate);
-  MAX30102_Shutdown();
   delayus(1000);
+  MAX30102_Setup(HR_MODE, sampleRate);
+  delayus(1000);
+  MAX30102_Stop();
+  delayus(1000);
+  MAX30102_Shutdown();
   
   // initilize the ADS1x9x
   ADS1x9x_Init(); 
@@ -57,26 +58,28 @@ extern void PTTFunc_SetPttSampling(bool start)
   osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
   if(start)
   {
-    ecgOk = false;
-    ppgOk = false;
     ecg = 0;
     ppg = 0;
     
     MAX30102_WakeUp();
-    
     ADS1x9x_WakeUp(); 
     // 这里一定要延时，否则容易死机
     delayus(1000);
+    
+    MAX30102_Start();
     ADS1x9x_StartConvert();
+    
     delayus(1000);
   } 
   else
-  {
-    MAX30102_Shutdown();
-    
+  {    
     ADS1x9x_StopConvert();
     ADS1x9x_StandBy();
-    delayus(2000);
+    delayus(1000);
+    
+    MAX30102_Stop();
+    delayus(1000);
+    MAX30102_Shutdown();
   }
 }
 
@@ -114,20 +117,16 @@ __interrupt void PORT0_ISR(void)
   }
   */
   
-  // P0_2中断, 即MAX30102数据中断
-  // 两个中断必须都触发，才读取两种数据，实现数据同步
-  if((P0IFG & 0x02) && (P0IFG & 0x04))
+  // P0_1中断, 即ADS1191数据中断
+  if(P0IFG & 0x02)
   {
-    ecgOk = ADS1x9x_ReadEcgSample(&ecg);
-    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
+    ADS1x9x_ReadEcgSample(&ecg);
     
-    ppgOk = MAX30102_ReadPpgSample(&ppg);
-    P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
+    MAX30102_ReadPpgSample(&ppg);
     
-    if(ecgOk && ppgOk) {
-      processPttSignal(ecg, ppg);
-    }
+    processPttSignal(ecg, ppg);
   
+    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
     P0IF = 0;           //clear P0 interrupt flag
   }
   

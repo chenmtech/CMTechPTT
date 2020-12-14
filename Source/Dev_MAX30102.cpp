@@ -161,13 +161,13 @@ static uint16 readOneSampleData();
 extern void MAX30102_Init()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(2000);
+  delayus(1000);
   
-  setINTPin();
-  delayus(2000);
+  //setINTPin();
+  //delayus(2000);
   
   readPartID();
-  delayus(2000);
+  //delayus(2000);
 }
 
 extern void MAX30102_Setup(uint8 mode, uint16 sampleRate)
@@ -208,22 +208,30 @@ extern void MAX30102_WakeUp()
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   delayus(2000);
   wakeUp();
-  delayus(2000);
-  enableDATARDY();
-  delayus(2000);
 }
 
 //停止MAX30102
 extern void MAX30102_Shutdown()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(2000);
-  disableDATARDY();
-  delayus(2000);
-  clearFIFO();
-  delayus(2000);
+  delayus(1000);
   shutDown();
-  delayus(2000);
+}
+
+extern void MAX30102_Start()
+{
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  delayus(100);
+  enableDATARDY();
+}
+
+extern void MAX30102_Stop()
+{
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  delayus(1000);
+  disableDATARDY();
+  delayus(1000);
+  clearFIFO();
 }
 
 // Die Temperature
@@ -451,24 +459,23 @@ static void setINTPin()
 extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  uint8 intStatus1 = getINT1();
   
-  // data ready interrupt
-  if(intStatus1 & 0x40) {
-    uint8 ptRead = getReadPointer();
-    uint8 ptWrite = getWritePointer();
-    if(ptRead != ptWrite) {
-      int8 num = ptWrite-ptRead;
-      if(num < 0) num += 32;
-      if(num > 1){
-        uint8 buff[6] = {0};
-        readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-      }
-      *pData = readOneSampleData();
-      return true;
-    }
+  uint8 intStatus1 = getINT1();
+  while(!(intStatus1 & 0x40))
+  {
+    intStatus1 = getINT1();
   }
-  return false;
+  
+  uint8 ptRead = getReadPointer();
+  uint8 ptWrite = getWritePointer();
+  int8 num = ptWrite-ptRead;
+  if(num < 0) num += 32;
+  if(num > 1){
+    uint8 buff[6] = {0};
+    readMultipleBytes(MAX30102_FIFODATA, 3, buff);
+  }
+  *pData = readOneSampleData();
+  return true;
 }
 
 // 读取最新的一个sample，可能包括RED/IR LED通道数据，由activeLED表示通道数

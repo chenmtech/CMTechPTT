@@ -118,7 +118,7 @@ extern void ADS1x9x_StartConvert(void)
   
   //START ∏ﬂµÁ∆Ω
   ADS_START_HIGH();    
-  delayus(32000); 
+  delayus(160); 
 }
 
 // stop continuous sampling

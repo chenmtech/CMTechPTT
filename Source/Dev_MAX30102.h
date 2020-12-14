@@ -17,6 +17,10 @@ extern void MAX30102_WakeUp();
 
 extern void MAX30102_Shutdown();
 
+extern void MAX30102_Start();
+
+extern void MAX30102_Stop();
+
 extern float MAX30102_ReadTemperature();
 
 extern bool MAX30102_ReadPpgSample(uint16* pData);
