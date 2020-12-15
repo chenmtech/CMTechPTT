@@ -193,7 +193,7 @@ extern void MAX30102_Setup(uint8 mode, uint16 sampleRate)
   else if (sampleRate == 3200) setSampleRate(MAX30102_SAMPLERATE_3200);
   else setSampleRate(MAX30102_SAMPLERATE_50);
   
-  setPulseWidth(MAX30102_PULSEWIDTH_215); //118: 16bit 215:17bit 411:18bit resolution
+  setPulseWidth(MAX30102_PULSEWIDTH_411); //118: 16bit 215:17bit 411:18bit resolution
   
   setPulseAmplitudeRed(0x1F); // 0x0F : 3.0mA, 0x1F: 6.2mA
   setPulseAmplitudeIR(0x1F);
@@ -498,7 +498,8 @@ static uint16 readOneSampleData()
   
   uint8 buff[6] = {0};
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-  uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
-  uint16 red = (uint16)(num32>>1);
+  //uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
+  //uint16 red = (uint16)(num32);
+  uint16 red = BUILD_UINT16(buff[2], buff[1]);
   return red;
 }
