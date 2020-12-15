@@ -460,14 +460,19 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
-  uint8 intStatus1 = getINT1();
-  while(!(intStatus1 & 0x40))
-  {
-    intStatus1 = getINT1();
-  }
+//  uint8 intStatus1 = getINT1();
+//  while(!(intStatus1 & 0x40))
+//  {
+//    intStatus1 = getINT1();
+//  }
   
-  uint8 ptRead = getReadPointer();
-  uint8 ptWrite = getWritePointer();
+  uint8 ptRead = 0;
+  uint8 ptWrite = 0;
+  do {
+    ptRead = getReadPointer();
+    ptWrite = getWritePointer();
+  }while(ptRead == ptWrite);
+  
   int8 num = ptWrite-ptRead;
   if(num < 0) num += 32;
   if(num > 1){

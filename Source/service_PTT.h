@@ -11,9 +11,9 @@
 #define PTT_SAMPLE_RATE               2  // sample rate
 
 // PTT Service UUIDs
-#define PTT_SERV_UUID                 0xAAB0
-#define PTT_PACK_UUID                 0xAAB1
-#define PTT_SAMPLE_RATE_UUID          0xAAB2
+#define PTT_SERV_UUID                 0xAAC0
+#define PTT_PACK_UUID                 0xAAC1
+#define PTT_SAMPLE_RATE_UUID          0xAAC2
 
 // PTT Service bit fields
 #define PTT_SERVICE                   0x00000001

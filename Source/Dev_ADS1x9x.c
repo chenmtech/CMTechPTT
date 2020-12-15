@@ -112,13 +112,10 @@ extern void ADS1x9x_StartConvert(void)
   delayus(100);
   SPI_ADS_SendByte(RDATAC);  
   delayus(100);
-  //ADS_CS_HIGH();  
-  
-  delayus(100);   
   
   //START ∏ﬂµÁ∆Ω
   ADS_START_HIGH();    
-  delayus(160); 
+  delayus(100); 
 }
 
 // stop continuous sampling

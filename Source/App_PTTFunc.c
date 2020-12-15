@@ -67,18 +67,17 @@ extern void PTTFunc_SetPttSampling(bool start)
     delayus(1000);
     
     MAX30102_Start();
+    delayus(100);
     ADS1x9x_StartConvert();
-    
-    delayus(1000);
   } 
   else
   {    
     ADS1x9x_StopConvert();
     ADS1x9x_StandBy();
-    delayus(1000);
+    delayus(100);
     
     MAX30102_Stop();
-    delayus(1000);
+    delayus(100);
     MAX30102_Shutdown();
   }
 }
@@ -121,13 +120,13 @@ __interrupt void PORT0_ISR(void)
   if(P0IFG & 0x02)
   {
     ADS1x9x_ReadEcgSample(&ecg);
-    
     MAX30102_ReadPpgSample(&ppg);
     
     processPttSignal(ecg, ppg);
   
     P0IFG &= ~(1<<1);   //clear P0_1 IFG 
     P0IF = 0;           //clear P0 interrupt flag
+  
   }
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  

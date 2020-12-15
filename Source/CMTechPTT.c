@@ -36,6 +36,7 @@
 #include "Service_PTT.h"
 #include "App_PTTFunc.h"
 #include "Dev_MAX30102.h"
+#include "Dev_ADS1x9x.h"
 
 #define ADVERTISING_INTERVAL 320 // ad interval, units of 0.625ms
 #define ADVERTISING_DURATION 2000 // ad duration, units of ms
@@ -84,8 +85,8 @@ static uint8 scanResponseData[] =
   'K',
   'M',
   'P',
-  'P',
-  'G'
+  'T',
+  'T'
 };
 
 static void gapStateCB( gaprole_States_t newState ); // gap state callback function
@@ -284,6 +285,12 @@ static void gapStateCB( gaprole_States_t newState )
   {
     // Get connection handle
     GAPRole_GetParameter( GAPROLE_CONNHANDLE, &gapConnHandle );
+    
+    delayus(1000);
+    ADS1x9x_PowerUp(); 
+    delayus(1000);
+    ADS1x9x_StandBy();  
+    delayus(1000);
   }
   // ¶Ï¿ªÁ¬½Ó
   else if(gapProfileState == GAPROLE_CONNECTED && 
