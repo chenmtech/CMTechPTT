@@ -181,7 +181,7 @@ extern void MAX30102_Setup(uint8 mode, uint16 sampleRate)
   
   setFIFOAverage(MAX30102_SAMPLEAVG_8); // 8 samples averaging
   
-  setADCRange(MAX30102_ADCRANGE_2048); // 
+  setADCRange(MAX30102_ADCRANGE_4096); // 
   
   if (sampleRate < 100) setSampleRate(MAX30102_SAMPLERATE_50); //Take 50 samples per second
   else if (sampleRate < 200) setSampleRate(MAX30102_SAMPLERATE_100);
@@ -471,13 +471,17 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
   do {
     ptRead = getReadPointer();
     ptWrite = getWritePointer();
+    delayus(1);
   }while(ptRead == ptWrite);
   
   int8 num = ptWrite-ptRead;
   if(num < 0) num += 32;
   if(num > 1){
     uint8 buff[6] = {0};
-    readMultipleBytes(MAX30102_FIFODATA, 3, buff);
+    for(int i = 0; i < num-1; i++)
+    {
+      readMultipleBytes(MAX30102_FIFODATA, 3, buff);
+    }
   }
   *pData = readOneSampleData();
   return true;
