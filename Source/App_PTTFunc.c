@@ -25,6 +25,8 @@ static uint8* pPttBuff;
 // ptt packet structure sent out
 static attHandleValueNoti_t pttNoti;
 
+static bool ecgOk = false;
+static bool ppgOk = false;
 static int16 ecg = 0;
 static uint16 ppg = 0;
 
@@ -58,7 +60,9 @@ extern void PTTFunc_SetPttSampling(bool start)
   osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
   if(start)
   {
+    ecgOk = false;
     ecg = 0;
+    ppgOk = false;
     ppg = 0;
     
     MAX30102_WakeUp();
@@ -66,9 +70,9 @@ extern void PTTFunc_SetPttSampling(bool start)
     // 这里一定要延时，否则容易死机
     delayus(1000);
     
-    MAX30102_Start();
-    delayus(100);
     ADS1x9x_StartConvert();
+    delayus(100);
+    MAX30102_Start();
   } 
   else
   {    
@@ -87,13 +91,11 @@ extern void PTTFunc_SendPttPacket(uint16 connHandle)
   PTT_PacketNotify( connHandle, &pttNoti );
 }
 
-
 #pragma vector = P0INT_VECTOR
 __interrupt void PORT0_ISR(void)
 { 
   HAL_ENTER_ISR();  // Hold off interrupts.
   
-  /*
   // P0_1中断, 即ADS1191数据中断
   if(P0IFG & 0x02)
   {
@@ -112,22 +114,24 @@ __interrupt void PORT0_ISR(void)
   
   if(ecgOk && ppgOk)
   {
-    processPttSignal(ppg, ecg);
+    processPttSignal(ecg, ppg);
+    ecgOk = false;
+    ppgOk = false;
   }
-  */
+  
   
   // P0_1中断, 即ADS1191数据中断
-  if(P0IFG & 0x02)
-  {
-    ADS1x9x_ReadEcgSample(&ecg);
-    MAX30102_ReadPpgSample(&ppg);
-    
-    processPttSignal(ecg, ppg);
-  
-    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
-    P0IF = 0;           //clear P0 interrupt flag
-  
-  }
+//  if(P0IFG & 0x02)
+//  {
+//    ADS1x9x_ReadEcgSample(&ecg);
+//    MAX30102_ReadPpgSample(&ppg);
+//    
+//    processPttSignal(ecg, ppg);
+//  
+//    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
+//    P0IF = 0;           //clear P0 interrupt flag
+//  
+//  }
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  
 }

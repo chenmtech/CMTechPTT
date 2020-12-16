@@ -166,7 +166,7 @@ extern void MAX30102_Init()
   //setINTPin();
   //delayus(2000);
   
-  readPartID();
+  //readPartID();
   //delayus(2000);
 }
 
@@ -195,8 +195,8 @@ extern void MAX30102_Setup(uint8 mode, uint16 sampleRate)
   
   setPulseWidth(MAX30102_PULSEWIDTH_411); //118: 16bit 215:17bit 411:18bit resolution
   
-  setPulseAmplitudeRed(0x1F); // 0x0F : 3.0mA, 0x1F: 6.2mA
-  setPulseAmplitudeIR(0x1F);
+  setPulseAmplitudeRed(0x0F); // 0x0F : 3.0mA, 0x1F: 6.2mA
+  setPulseAmplitudeIR(0x0F);
   
     
   clearFIFO(); //Reset the FIFO before we begin checking the sensor
@@ -466,23 +466,20 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 //    intStatus1 = getINT1();
 //  }
   
-  uint8 ptRead = 0;
-  uint8 ptWrite = 0;
-  do {
-    ptRead = getReadPointer();
-    ptWrite = getWritePointer();
-    delayus(1);
-  }while(ptRead == ptWrite);
-  
-  int8 num = ptWrite-ptRead;
-  if(num < 0) num += 32;
-  if(num > 1){
-    uint8 buff[6] = {0};
-    for(int i = 0; i < num-1; i++)
-    {
-      readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-    }
-  }
+//  uint8 ptRead = 0;
+//  uint8 ptWrite = 0;
+//  do {
+//    ptRead = getReadPointer();
+//    ptWrite = getWritePointer();
+//    delayus(1);
+//  }while(ptRead == ptWrite);
+//  
+//  int8 num = ptWrite-ptRead;
+//  if(num < 0) num += 32;
+//  if(num > 1){
+//    uint8 buff[6] = {0};
+//    readMultipleBytes(MAX30102_FIFODATA, 3, buff);
+//  }
   *pData = readOneSampleData();
   return true;
 }
@@ -491,11 +488,6 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 // 每个通道数据都转化为uint16类型
 static uint16 readOneSampleData()
 {
-  // 将read pointer指向write pointer后一个，即只读取最新的一个样本数据
-  //uint8 ptWrite = readOneByte(MAX30102_FIFOWRITEPTR);
-  //ptWrite = ptWrite-1;
-  //writeOneByte(MAX30102_FIFOREADPTR, ptWrite);
-  
   uint8 buff[6] = {0};
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   //uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
