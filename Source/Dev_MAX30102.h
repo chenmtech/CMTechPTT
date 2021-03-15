@@ -11,7 +11,7 @@
 
 extern void MAX30102_Init();
 
-extern void MAX30102_Setup(uint8 mode, uint16 sampleRate);
+extern void MAX30102_Setup();
 
 extern void MAX30102_WakeUp();
 

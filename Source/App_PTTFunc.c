@@ -40,7 +40,7 @@ extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
   // initilize the MAX30102
   MAX30102_Init();
   delayus(1000);
-  MAX30102_Setup(HR_MODE, sampleRate);
+  MAX30102_Setup();
   delayus(1000);
   MAX30102_Stop();
   delayus(1000);
