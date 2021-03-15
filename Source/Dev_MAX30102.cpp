@@ -12,42 +12,48 @@
 /*
 * 常量
 */
-#define I2C_ADDR 0x57   //MAX30102的I2C地址
+//MAX30102的I2C地址
+static const uint8 I2C_ADDR = 0x57;
 
+// 部分ID数，用来确认是不是MAX30102芯片
 static const uint8 MAX30102_EXPECTEDPARTID = 0x15;
 
-// Status Registers
-static const uint8 MAX30102_INTSTAT1 =		0x00;
-static const uint8 MAX30102_INTSTAT2 =		0x01;
-static const uint8 MAX30102_INTENABLE1 =	0x02;
-static const uint8 MAX30102_INTENABLE2 =	0x03;
+// 寄存器地址，见pg.10表格
+// 中断相关寄存器
+static const uint8 MAX30102_INTSTAT1 =		0x00; // 中断寄存器1
+static const uint8 MAX30102_INTSTAT2 =		0x01; // 中断寄存器2
+static const uint8 MAX30102_INTENABLE1 =	0x02; // 中断使能1
+static const uint8 MAX30102_INTENABLE2 =	0x03; // 中断使能2
 
-// FIFO Registers
-static const uint8 MAX30102_FIFOWRITEPTR = 	0x04;
-static const uint8 MAX30102_FIFOOVERFLOW = 	0x05;
-static const uint8 MAX30102_FIFOREADPTR = 	0x06;
-static const uint8 MAX30102_FIFODATA =		0x07;
+// FIFO数据读写相关寄存器
+static const uint8 MAX30102_FIFOWRITEPTR = 	0x04; // FIFO写指针
+static const uint8 MAX30102_FIFOOVERFLOW = 	0x05; // 数据溢出计数器
+static const uint8 MAX30102_FIFOREADPTR = 	0x06; // FIFO读指针
+static const uint8 MAX30102_FIFODATA =		0x07; // FIFO数据寄存器
 
-// Configuration Registers
-static const uint8 MAX30102_FIFOCONFIG = 	0x08;
-static const uint8 MAX30102_MODECONFIG = 	0x09;
-static const uint8 MAX30102_SPO2CONFIG = 	0x0A;    // Note, sometimes listed as "SPO2" config in datasheet (pg. 11)
-static const uint8 MAX30102_LED1_PULSEAMP = 	0x0C;
-static const uint8 MAX30102_LED2_PULSEAMP = 	0x0D;
-static const uint8 MAX30102_MULTILEDCONFIG1 =   0x11;
-static const uint8 MAX30102_MULTILEDCONFIG2 =   0x12;
+// 下面是配置寄存器
+static const uint8 MAX30102_FIFOCONFIG = 	0x08; // FIFO缓存配置
+static const uint8 MAX30102_MODECONFIG = 	0x09; // 工作模式配置
+static const uint8 MAX30102_SPO2CONFIG = 	0x0A; // SPO2配置，用来设置信号的动态输出范围等
+static const uint8 MAX30102_LED1_PULSEAMP = 	0x0C; // 红色LED的光脉冲幅度配置，用来调整供电电流大小
+static const uint8 MAX30102_LED2_PULSEAMP = 	0x0D; // 红外LED的光脉冲幅度配置，用来调整供电电流大小
+static const uint8 MAX30102_MULTILEDCONFIG1 =   0x11; // 多LED模式下的时间槽配置1
+static const uint8 MAX30102_MULTILEDCONFIG2 =   0x12; // 多LED模式下的时间槽配置2
 
-// Die Temperature Registers
-static const uint8 MAX30102_DIETEMPINT = 	0x1F;
-static const uint8 MAX30102_DIETEMPFRAC = 	0x20;
-static const uint8 MAX30102_DIETEMPCONFIG = 	0x21;
+// 芯片温度相关寄存器
+static const uint8 MAX30102_DIETEMPINT = 	0x1F; // 温度数据的整数部分
+static const uint8 MAX30102_DIETEMPFRAC = 	0x20; // 温度数据的小数部分
+static const uint8 MAX30102_DIETEMPCONFIG = 	0x21; // 温度配置，用来使能温度采集
 
-// Part ID Registers
-static const uint8 MAX30102_REVISIONID = 		0xFE;
-static const uint8 MAX30102_PARTID = 			0xFF;    // Should always be 0x15. Identical to MAX30102.
+// 部件ID寄存器
+static const uint8 MAX30102_REVISIONID = 	0xFE;
+static const uint8 MAX30102_PARTID = 		0xFF; // 内容必须是MAX30102_EXPECTEDPARTID，即0x15.
 
-// MAX30102 Commands
-// Interrupt configuration (pg 13, 14)
+// 下面的常数用于实现对某个寄存器的某些位进行相应设置，以达到设置芯片功能的目的
+// MASK用于指定设置寄存器的哪些位，而跟着MASK的就是指定要设置的值
+// 具体是如何设置的，请阅读函数bitMask的说明
+
+// 中断相关设置 (pg 12, 13)
 static const uint8 MAX30102_INT_A_FULL_MASK =		(uint8)~0x80;
 static const uint8 MAX30102_INT_A_FULL_ENABLE = 	0x80;
 static const uint8 MAX30102_INT_A_FULL_DISABLE = 	0x00;
