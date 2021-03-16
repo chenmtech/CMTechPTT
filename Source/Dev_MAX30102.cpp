@@ -211,11 +211,11 @@ extern void MAX30102_Setup()
   // 设置样本平均个数为8，所以实际数据率为125Hz
   setFIFOAverage(MAX30102_SAMPLEAVG_8);
   
-  // 设置ADC量程范围为4.096uA
-  setADCRange(MAX30102_ADCRANGE_4096); // 
-  
   // 设置LED脉冲宽度，使得ADC输出有效位数为18位
   setPulseWidth(MAX30102_PULSEWIDTH_18);
+  
+  // 设置ADC量程范围为4.096uA
+  setADCRange(MAX30102_ADCRANGE_4096);
   
   // 设置LED脉冲幅度
   setPulseAmplitudeRed(0x1F); // 0x0F : 3.0mA, 0x1F: 6.2mA
@@ -233,7 +233,7 @@ extern void MAX30102_WakeUp()
   wakeUp();
 }
 
-// 关停MAX30102
+// 关停MAX30102，使其处于低功耗模式
 extern void MAX30102_Shutdown()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
@@ -307,7 +307,7 @@ static uint8 readOneByte(uint8 reg)
 // 从寄存器读取多个字节的值
 // reg: 寄存器地址
 // len: 读取的字节数
-// pBuff: 存储读取的数据指针
+// pBuff: 存储读取的数据缓存指针
 static void readMultipleBytes(uint8 reg, uint8 len, uint8* pBuff)
 {
   IIC_Write(1, &reg);
@@ -315,7 +315,7 @@ static void readMultipleBytes(uint8 reg, uint8 len, uint8* pBuff)
 }
 
 // 改变寄存器的某些位的值
-// 分为三步：先读取寄存器的值，再用mask来清零这个值的某些位，然后用thing来设置这个值某些位
+// 分为三步：先读取寄存器的值，再用mask来清零这个值的某些位，然后用thing来设置这个值某些位，最后写入寄存器
 // reg: 要设置的寄存器地址
 // mask: 将寄存器中对应mask为0的位清零
 // thing: 将寄存器中对应thing为1的位 置1
@@ -434,12 +434,12 @@ static void setPulseWidth(uint8 pulseWidth) {
 // 设置LED脉冲幅度，即通过设置供电电流来设置LED发射光的强度
 // NOTE: Amplitude values: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
 // See datasheet, page 20, Table 8
-// 红光LED
+// 红光LED脉冲幅度
 static void setPulseAmplitudeRed(uint8 amplitude) {
   writeOneByte(MAX30102_LED1_PULSEAMP, amplitude);
 }
 
-// 红外LED
+// 红外LED脉冲幅度
 static void setPulseAmplitudeIR(uint8 amplitude) {
   writeOneByte(MAX30102_LED2_PULSEAMP, amplitude);
 }
@@ -511,7 +511,7 @@ static void setINTPin()
 }
 */
 
-// 读取最新的一个PPG数据
+// 读取最新的一个PPG数据，假设只有一个通道数据
 extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
@@ -519,7 +519,7 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
   uint8 ptRead = getReadPointer();
   uint8 ptWrite = getWritePointer();
   int8 num = ptWrite-ptRead;
-  if(num < 0) num += 32;
+  if(num < 0) num += 32; // 消除翻滚导致的ptWrite小于ptRead
   // 如果有多余的数据，读出丢弃
   while(num > 1)
   {
@@ -533,7 +533,7 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 
 // 读取最新的一个数据
 // 由于PPG应用只需要开启一个通道的数据，所以只需要读取3个字节
-// 每个通道数据都转化为uint16类型
+// 每个通道数据只取16位，并转化为uint16类型
 static uint16 readOneSampleData()
 {
   uint8 buff[3] = {0};
