@@ -184,15 +184,6 @@ static uint16 readOneSampleData();
 /*
 * 公共函数
 */
-// 初始化
-extern void MAX30102_Init()
-{
-  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(1000);
-  
-  //setINTPin();
-  //delayus(2000);
-}
 
 // 配置MAX30102
 extern void MAX30102_Setup()

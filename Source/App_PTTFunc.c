@@ -30,16 +30,14 @@ static bool ppgOk = false;
 static int16 ecg = 0;
 static uint16 ppg = 0;
 
-// the callback function to process the PTT data from MAX30102
+// the callback function to process the PTT data read from MAX30102
 static void processPttSignal(int16 ecg, uint16 ppg);
 
-extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate)
+extern void PTTFunc_Init(uint8 taskID)
 { 
   taskId = taskID;
   
-  // initilize the MAX30102
-  MAX30102_Init();
-  delayus(1000);
+  // ≈‰÷√MAX30102
   MAX30102_Setup();
   delayus(1000);
   MAX30102_Stop();

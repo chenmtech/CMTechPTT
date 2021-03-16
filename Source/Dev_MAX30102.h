@@ -6,11 +6,6 @@
 #ifndef DEV_MAX30102_H
 #define DEV_MAX30102_H
 
-#define HR_MODE 0x00
-#define SPO2_MODE 0x01
-
-extern void MAX30102_Init();
-
 extern void MAX30102_Setup();
 
 extern void MAX30102_WakeUp();

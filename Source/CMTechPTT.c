@@ -185,15 +185,13 @@ extern void PTT_Init( uint8 task_id )
     PTT_SetParameter( PTT_SAMPLE_RATE, sizeof ( uint16 ), &pttSampleRate ); 
   }
   
-  //在这里初始化GPIO
-  //第一：所有管脚，reset后的状态都是输入加上拉
-  //第二：对于不用的IO，建议不连接到外部电路，且设为输入上拉
-  //第三：对于会用到的IO，就要根据具体外部电路连接情况进行有效设置，防止耗电
+  //初始化IO管脚
   initIOPin();
   
   delayus(100);
   
-  PTTFunc_Init(taskID, 1000); // max30102 sample rate = 1kHz
+  // PTT应用初始化
+  PTTFunc_Init(taskID);
   
   HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );  
 
@@ -209,7 +207,7 @@ static void initIOPin()
   P1SEL = 0; 
   P2SEL = 0; 
 
-  // 全部设为输出低电平
+  // P0.1, P0.2设为输入，其他设为输出
   P0DIR = 0xF9; 
   P1DIR = 0xFF; 
   P2DIR = 0x1F; 
@@ -220,15 +218,14 @@ static void initIOPin()
   
   IIC_SetAsGPIO();
   
-  //P0.1 P0.2管脚配置  
+  // 关P0.1, P0.2中断
   P0IEN &= 0xF9;
   P0IFG &= 0xF9;  
   P0IF = 0;   
   
-  //配置P0.1即DRDY 中断
-  PICTL |= (1<<0);  //下降沿触发
-  //////////////////////////
+  PICTL |= (1<<0);  //所有P0管脚都是下降沿触发
   
+  //开P0.1, P0.2 INT中断
   P0IEN |= 0x06;    
   P0IE = 1;  
 }

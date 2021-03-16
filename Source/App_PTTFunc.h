@@ -8,8 +8,8 @@
 
 #include "hal_types.h"
 
-extern void PTTFunc_Init(uint8 taskID, uint16 sampleRate); //init
-extern void PTTFunc_SetPttSampling(bool start); // set up the PTT sampling started or stopped
-extern void PTTFunc_SendPttPacket(uint16 connHandle); // send PTT data packet
+extern void PTTFunc_Init(uint8 taskID); //init
+extern void PTTFunc_SetPttSampling(bool start); // start or stop the PTT sampling
+extern void PTTFunc_SendPttPacket(uint16 connHandle); // send PTT data packet with connHandle
 
 #endif
