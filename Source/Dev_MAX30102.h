@@ -6,6 +6,10 @@
 #ifndef DEV_MAX30102_H
 #define DEV_MAX30102_H
 
+extern bool MAX30102_IsPowerOn();
+
+extern bool MAX30102_IsDATARDY();
+
 extern void MAX30102_Setup();
 
 extern void MAX30102_WakeUp();
@@ -21,3 +25,4 @@ extern float MAX30102_ReadTemperature();
 extern bool MAX30102_ReadPpgSample(uint16* pData);
 
 #endif
+

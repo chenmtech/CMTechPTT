@@ -65,6 +65,4 @@ extern uint8 IIC_Write(uint8 len, uint8 *pBuf);
 // disable I2C模块, 主要用在hal_sleep中在休眠模式下关闭I2C
 extern void IIC_Disable(void);
 
-extern void IIC_SetAsGPIO();
-
 #endif /*  HAL_I2C_H  */

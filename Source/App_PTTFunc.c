@@ -35,20 +35,19 @@ static void processPttSignal(int16 ecg, uint16 ppg);
 
 extern void PTTFunc_Init(uint8 taskID)
 { 
-  taskId = taskID;
+  taskId = taskID;  
   
+  // 判断MAX30102是否上电
+  while(!MAX30102_IsPowerOn());
   // 配置MAX30102
   MAX30102_Setup();
-  delayus(1000);
-  MAX30102_Stop();
-  delayus(1000);
+  // 进入低功耗模式
   MAX30102_Shutdown();
   
   // initilize the ADS1x9x
   ADS1x9x_Init(); 
-  delayus(1000);
+  // 进入Power-down模式
   ADS1x9x_PowerDown(); 
-  delayus(1000);
 }
 
 extern void PTTFunc_SetPttSampling(bool start)
@@ -66,21 +65,21 @@ extern void PTTFunc_SetPttSampling(bool start)
     MAX30102_WakeUp();
     ADS1x9x_WakeUp(); 
     // 这里一定要延时，否则容易死机
-    delayus(1000);
+    //delayus(1000);
     
     ADS1x9x_StartConvert();
-    delayus(100);
     MAX30102_Start();
+    //delayus(1000);
   } 
   else
   {    
     ADS1x9x_StopConvert();
-    ADS1x9x_StandBy();
-    delayus(100);
+    MAX30102_Stop();    
+    //delayus(1000);
     
-    MAX30102_Stop();
-    delayus(100);
+    ADS1x9x_StandBy();
     MAX30102_Shutdown();
+    //delayus(1000);
   }
 }
 
@@ -94,21 +93,22 @@ __interrupt void PORT0_ISR(void)
 { 
   HAL_ENTER_ISR();  // Hold off interrupts.
   
+  // P0_2中断, 即MAX30102数据中断  
+  if(P0IFG & 0x04)
+  {
+    //if(MAX30102_IsDATARDY()) // MAX30102数据中断 
+    //{
+      ppgOk = MAX30102_ReadPpgSample(&ppg);
+    //}
+    P0IFG &= ~(1<<2);   // clear P0_2 IFG
+  }
+  
   // P0_1中断, 即ADS1191数据中断
   if(P0IFG & 0x02)
   {
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
     P0IFG &= ~(1<<1);   //clear P0_1 IFG 
-  }
-  
-  // P0_2中断, 即MAX30102数据中断  
-  if(P0IFG & 0x04)
-  {
-    ppgOk = MAX30102_ReadPpgSample(&ppg);
-    P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
-  }
-  
-  P0IF = 0;           //clear P0 interrupt flag
+  }  
   
   if(ecgOk && ppgOk)
   {
@@ -117,19 +117,7 @@ __interrupt void PORT0_ISR(void)
     ppgOk = false;
   }
   
-  
-  // P0_1中断, 即ADS1191数据中断
-//  if(P0IFG & 0x02)
-//  {
-//    ADS1x9x_ReadEcgSample(&ecg);
-//    MAX30102_ReadPpgSample(&ppg);
-//    
-//    processPttSignal(ecg, ppg);
-//  
-//    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
-//    P0IF = 0;           //clear P0 interrupt flag
-//  
-//  }
+  P0IF = 0;           //clear P0 interrupt flag
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  
 }

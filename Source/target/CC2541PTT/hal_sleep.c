@@ -45,6 +45,7 @@
 #include "hal_board.h"
 #include "hal_sleep.h"
 #include "hal_led.h"
+#include "hal_i2c.h"
 #include "hal_key.h"
 #include "OSAL.h"
 #include "OSAL_Timers.h"
@@ -391,6 +392,9 @@ void halSleep( uint32 osal_timeout )
       // save interrupt enable registers and disable all interrupts
       HAL_SLEEP_IE_BACKUP_AND_DISABLE(ien0, ien1, ien2);
       HAL_ENABLE_INTERRUPTS();
+      
+      // Disable I2C to avoid driving lines
+      IIC_Disable();
 
 
 #ifdef DEBUG_GPIO

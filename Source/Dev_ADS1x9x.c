@@ -71,6 +71,7 @@ extern void ADS1x9x_Init()
 {
   // init ADS1x9x chip
   SPI_ADS_Init();
+  delayus(1000);
 }
 
 extern void ADS1x9x_PowerDown()

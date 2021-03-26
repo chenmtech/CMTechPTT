@@ -260,14 +260,5 @@ extern uint8 IIC_Write(uint8 len, uint8 *pBuf)
   return len;
 }
 
-// 一定要把I2C的接口设为GPIO才能省电
-extern void IIC_SetAsGPIO()
-{
-  // I2C的SDA, SCL设置为GPIO
-  I2CWC = 0x8C;   //GPIO,000,SCL pullup Eable, SDA pullup Eable, SCL output disable, SDA output disable
-  I2CIO = 0x03;   //000000, SCL Output register=1, SDA Output register=1
-}
-
-
 /**************************************************************************************************
 */

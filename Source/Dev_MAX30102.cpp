@@ -1,6 +1,8 @@
 /*
 * MAX30102: 脉搏和心率传感器MAX30102驱动
 * Written by Chenm 2020-12-07
+*
+* 代码优化 by chenm 2021-03-16
 */
 
 
@@ -15,7 +17,7 @@
 //MAX30102的I2C地址
 static const uint8 I2C_ADDR = 0x57;
 
-// 部分ID数，用来确认是不是MAX30102芯片
+// 部件ID，用来确认是不是MAX30102芯片
 static const uint8 MAX30102_EXPECTEDPARTID = 0x15;
 
 // 下面为寄存器地址，见pg 10表格
@@ -179,38 +181,55 @@ static void setPulseWidth(uint8 pulseWidth);
 static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
 static uint16 readOneSampleData();
+static void setSLOT1(uint8 SLOT1);
 //static void setINTPin();
 
 /*
 * 公共函数
 */
 
+// 判断是否上电
+extern bool MAX30102_IsPowerOn()
+{
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  uint8 intStatus1 = getINT1();
+  return (intStatus1 & 0x01);
+}
+
+// 判断是否触发DATA RDY 中断
+extern bool MAX30102_IsDATARDY()
+{
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  uint8 intStatus1 = getINT1();
+  return (intStatus1 & 0x40);
+}
+
 // 配置MAX30102
 extern void MAX30102_Setup()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(2000);
   
   // 软重启芯片
   softReset();
   
   // 设置仅开启红色LED，即心率模式
-  setLEDMode(MAX30102_MODE_REDONLY); 
-  
+  setLEDMode(MAX30102_MODE_REDONLY);
+  // 设置时间槽
+  //setSLOT1(SLOT_RED_LED);
   // 设置采样率为1kHz
   setSampleRate(MAX30102_SAMPLERATE_1000);
   // 设置样本平均个数为8，所以实际数据率为125Hz
   setFIFOAverage(MAX30102_SAMPLEAVG_8);
   
-  // 设置LED脉冲宽度，使得ADC输出有效位数为18位
-  setPulseWidth(MAX30102_PULSEWIDTH_18);
+  // 设置LED脉冲宽度，改变ADC输出有效位数
+  setPulseWidth(MAX30102_PULSEWIDTH_16);
   
-  // 设置ADC量程范围为4.096uA
-  setADCRange(MAX30102_ADCRANGE_4096);
+  // 设置ADC光电流的量程范围, 单位nA
+  setADCRange(MAX30102_ADCRANGE_2048);
   
-  // 设置LED脉冲幅度
-  setPulseAmplitudeRed(0x1F); // 0x0F : 3.0mA, 0x1F: 6.2mA
-  setPulseAmplitudeIR(0x1F);
+  // 设置LED脉冲幅度，数值乘以0.2就是供电电流值mA
+  setPulseAmplitudeRed(0x0A); 
+  setPulseAmplitudeIR(0x0A);
   
   // 重置FIFO  
   clearFIFO();
@@ -220,7 +239,6 @@ extern void MAX30102_Setup()
 extern void MAX30102_WakeUp()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(2000);
   wakeUp();
 }
 
@@ -228,7 +246,6 @@ extern void MAX30102_WakeUp()
 extern void MAX30102_Shutdown()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(1000);
   shutDown();
 }
 
@@ -236,7 +253,6 @@ extern void MAX30102_Shutdown()
 extern void MAX30102_Start()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(100);
   enableDATARDY();
 }
 
@@ -244,9 +260,7 @@ extern void MAX30102_Start()
 extern void MAX30102_Stop()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  delayus(1000);
   disableDATARDY();
-  delayus(1000);
   clearFIFO();
 }
 
@@ -404,7 +418,11 @@ static void setLEDMode(uint8 mode) {
   // See datasheet, page 18
   bitMask(MAX30102_MODECONFIG, MAX30102_MODE_MASK, mode);
 }
-
+// 设置时间槽
+static void setSLOT1(uint8 SLOT1){
+  //SLOT_NONE, SLOT_RED_LED, SLOT_IR_LED 
+  bitMask(MAX30102_MULTILEDCONFIG1, MAX30102_SLOT1_MASK, SLOT1);
+}
 // 设置ADC量程范围
 static void setADCRange(uint8 adcRange) {
   // adcRange: one of MAX30102_ADCRANGE_2048, _4096, _8192, _16384
@@ -480,43 +498,25 @@ static uint8 getReadPointer()
   return readOneByte(MAX30102_FIFOREADPTR);
 }
 
-// INT中断管脚设置
-/*
-static void setINTPin()
-{
-  //P0.2 INT管脚配置  
-  //先关P0.2 INT中断
-  P0IEN &= ~(1<<2);
-  P0IFG &= ~(1<<2);   // clear P0_2 interrupt status flag
-  P0IF = 0;           //clear P0 interrupt flag  
-  
-  //配置P0.2 INT 中断
-  P0SEL &= ~(1<<2); //GPIO
-  P0DIR &= ~(1<<2); //Input
-  PICTL |= (1<<0);  //所有P0管脚都是下降沿触发
-  //////////////////////////
-  
-  //开P0.2 INT中断
-  P0IEN |= (1<<2);    // P0_2 interrupt enable
-  P0IE = 1;           // P0 interrupt enable  
-}
-*/
+static uint8 buff[3] = {0};
 
 // 读取最新的一个PPG数据，假设只有一个通道数据
 extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
+  /*
   uint8 ptRead = getReadPointer();
   uint8 ptWrite = getWritePointer();
   int8 num = ptWrite-ptRead;
+  if(num == 0) return false;
   if(num < 0) num += 32; // 消除翻滚导致的ptWrite小于ptRead
   // 如果有多余的数据，读出丢弃
   while(num > 1)
   {
-    uint8 buff[3] = {0};
     readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   }
+  */
   // 读取需要的最新一个
   *pData = readOneSampleData();
   return true;
@@ -527,13 +527,9 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 // 每个通道数据只取16位，并转化为uint16类型
 static uint16 readOneSampleData()
 {
-  uint8 buff[3] = {0};
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-  //uint32 num32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
-  //uint16 red = (uint16)(num32);
   
-  // 读出的数据按照位数从高到低排列，应该为buff[0] | buff[1] | buff[2]
-  // 这里把高位的buff[0]丢弃，为什么呢？
-  uint16 data = BUILD_UINT16(buff[2], buff[1]);
+  uint32 data32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
+  uint16 data = (uint16)(data32>>2);
   return data;
 }

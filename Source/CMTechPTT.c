@@ -113,6 +113,7 @@ static PTTServiceCBs_t pttServCBs =
 
 static void processOSALMsg( osal_event_hdr_t *pMsg ); // OSAL message process function
 static void initIOPin(); // initialize IO pins
+static void initInterrupt(); // initialize interrupt
 static void startPttSampling( void ); // start PTT sampling
 static void stopPttSampling( void ); // stop PTT sampling
 
@@ -175,10 +176,8 @@ extern void PTT_Init( uint8 task_id )
   // Initialize GATT attributes
   GGS_AddService( GATT_ALL_SERVICES );         // GAP
   GATTServApp_AddService( GATT_ALL_SERVICES ); // GATT attributes
-  DevInfo_AddService( ); // device information service
-  
+  DevInfo_AddService( ); // device information service  
   PTT_AddService(GATT_ALL_SERVICES); // ptt service
-  PTT_RegisterAppCBs( &pttServCBs );  
   
   // set sample rate in ptt service
   {
@@ -188,10 +187,13 @@ extern void PTT_Init( uint8 task_id )
   //初始化IO管脚
   initIOPin();
   
-  delayus(100);
-  
   // PTT应用初始化
-  PTTFunc_Init(taskID);
+  PTTFunc_Init(taskID);  
+  
+  // 初始化中断
+  initInterrupt();
+  
+  PTT_RegisterAppCBs( &pttServCBs );  
   
   HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );  
 
@@ -215,9 +217,10 @@ static void initIOPin()
   P0 = 0; 
   P1 = 0;   
   P2 = 0; 
-  
-  IIC_SetAsGPIO();
-  
+}
+
+static void initInterrupt()
+{  
   // 关P0.1, P0.2中断
   P0IEN &= 0xF9;
   P0IFG &= 0xF9;  
@@ -227,7 +230,7 @@ static void initIOPin()
   
   //开P0.1, P0.2 INT中断
   P0IEN |= 0x06;    
-  P0IE = 1;  
+  P0IE = 1;   
 }
 
 extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
@@ -266,10 +269,10 @@ extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
   
   if ( events & PTT_PACKET_NOTI_EVT )
   {
-    if (gapProfileState == GAPROLE_CONNECTED)
-    {
+    //if (gapProfileState == GAPROLE_CONNECTED)
+    //{
       PTTFunc_SendPttPacket(gapConnHandle);
-    }
+    //}
 
     return (events ^ PTT_PACKET_NOTI_EVT);
   } 
@@ -296,19 +299,19 @@ static void gapStateCB( gaprole_States_t newState )
     // Get connection handle
     GAPRole_GetParameter( GAPROLE_CONNHANDLE, &gapConnHandle );
     
-    delayus(1000);
+    //delayus(1000);
     ADS1x9x_PowerUp(); 
-    delayus(1000);
+    //delayus(1000);
     ADS1x9x_StandBy();  
-    delayus(1000);
+    //delayus(1000);
   }
   // 断开连接
   else if(gapProfileState == GAPROLE_CONNECTED && 
             newState != GAPROLE_CONNECTED)
   {
     stopPttSampling();
-    //initIOPin();
-    //ADS1x9x_PowerDown();
+    // ADS1x9x进入Power-down模式
+    ADS1x9x_PowerDown();
   }
   // if started
   else if (newState == GAPROLE_STARTED)
