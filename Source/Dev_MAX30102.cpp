@@ -180,7 +180,6 @@ static void setSampleRate(uint8 sampleRate);
 static void setPulseWidth(uint8 pulseWidth);
 static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
-static uint16 readOneSampleData();
 static void setSLOT1(uint8 SLOT1);
 //static void setINTPin();
 
@@ -517,19 +516,10 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
     readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   }
   */
-  // 读取需要的最新一个
-  *pData = readOneSampleData();
-  return true;
-}
-
-// 读取最新的一个数据
-// 由于PPG应用只需要开启一个通道的数据，所以只需要读取3个字节
-// 每个通道数据只取16位，并转化为uint16类型
-static uint16 readOneSampleData()
-{
-  readMultipleBytes(MAX30102_FIFODATA, 3, buff);
   
+  // 读取数据
+  readMultipleBytes(MAX30102_FIFODATA, 3, buff);  
   uint32 data32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
-  uint16 data = (uint16)(data32>>2);
-  return data;
+  *pData = (uint16)(data32>>2);
+  return true;
 }

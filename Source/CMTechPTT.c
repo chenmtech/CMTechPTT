@@ -28,14 +28,10 @@
   #include "oad_target.h"
 #endif
 
-
-#include "hal_i2c.h"
-#include "CMUtil.h"
 #include "CMTechPTT.h"
 #include "Service_DevInfo.h"
 #include "Service_PTT.h"
 #include "App_PTTFunc.h"
-#include "Dev_MAX30102.h"
 #include "Dev_ADS1x9x.h"
 
 #define ADVERTISING_INTERVAL 320 // ad interval, units of 0.625ms
@@ -214,6 +210,7 @@ static void initIOPin()
   P1DIR = 0xFF; 
   P2DIR = 0x1F; 
 
+  // 低电平
   P0 = 0; 
   P1 = 0;   
   P2 = 0; 
@@ -299,16 +296,16 @@ static void gapStateCB( gaprole_States_t newState )
     // Get connection handle
     GAPRole_GetParameter( GAPROLE_CONNHANDLE, &gapConnHandle );
     
-    //delayus(1000);
+    // 让ADS1x9x从power-down模式退出
     ADS1x9x_PowerUp(); 
-    //delayus(1000);
+    // 进入standby模式
     ADS1x9x_StandBy();  
-    //delayus(1000);
   }
   // 断开连接
   else if(gapProfileState == GAPROLE_CONNECTED && 
             newState != GAPROLE_CONNECTED)
   {
+    // 停止采样
     stopPttSampling();
     // ADS1x9x进入Power-down模式
     ADS1x9x_PowerDown();

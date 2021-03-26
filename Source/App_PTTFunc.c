@@ -14,14 +14,18 @@
 #define PTT_PACK_BYTE_NUM 17 // byte number per PTT packet, 1+4*4
 #define PTT_MAX_PACK_NUM 255 // max packet num
 
-static uint8 taskId; // taskId of application
+// taskId of application
+static uint8 taskId; 
 
 // the number of the current ptt data packet, from 0 to PTT_MAX_PACK_NUM
 static uint8 pckNum = 0;
+
 // ptt packet buffer
-static uint8 pttBuff[PTT_PACK_BYTE_NUM] = {0};
+static uint8 pckBuff[PTT_PACK_BYTE_NUM] = {0};
+
 // pointer to the current position of the ptt buff
-static uint8* pPttBuff;
+static uint8* pBuffPos;
+
 // ptt packet structure sent out
 static attHandleValueNoti_t pttNoti;
 
@@ -53,7 +57,7 @@ extern void PTTFunc_Init(uint8 taskID)
 extern void PTTFunc_SetPttSampling(bool start)
 {
   pckNum = 0;
-  pPttBuff = pttBuff;
+  pBuffPos = pckBuff;
   osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
   if(start)
   {
@@ -62,24 +66,23 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppgOk = false;
     ppg = 0;
     
+    // 唤醒两个终端
     MAX30102_WakeUp();
     ADS1x9x_WakeUp(); 
-    // 这里一定要延时，否则容易死机
-    //delayus(1000);
     
+    // 启动采集
     ADS1x9x_StartConvert();
     MAX30102_Start();
-    //delayus(1000);
   } 
   else
   {    
+    // 停止采集
     ADS1x9x_StopConvert();
-    MAX30102_Stop();    
-    //delayus(1000);
+    MAX30102_Stop();  
     
+    // 进入低功耗模式
     ADS1x9x_StandBy();
     MAX30102_Shutdown();
-    //delayus(1000);
   }
 }
 
@@ -96,20 +99,20 @@ __interrupt void PORT0_ISR(void)
   // P0_2中断, 即MAX30102数据中断  
   if(P0IFG & 0x04)
   {
-    //if(MAX30102_IsDATARDY()) // MAX30102数据中断 
-    //{
-      ppgOk = MAX30102_ReadPpgSample(&ppg);
-    //}
+    // 读PPG数据
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
     P0IFG &= ~(1<<2);   // clear P0_2 IFG
   }
   
   // P0_1中断, 即ADS1191数据中断
   if(P0IFG & 0x02)
   {
+    // 读ECG数据
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
     P0IFG &= ~(1<<1);   //clear P0_1 IFG 
   }  
   
+  // PPG和ECG数据都有了，则处理数据
   if(ecgOk && ppgOk)
   {
     processPttSignal(ecg, ppg);
@@ -124,21 +127,25 @@ __interrupt void PORT0_ISR(void)
 
 static void processPttSignal(int16 ecg, uint16 ppg)
 {
-  if(pPttBuff == pttBuff)
+  // 添加包序号
+  if(pBuffPos == pckBuff)
   {
-    *pPttBuff++ = pckNum;
+    *pBuffPos++ = pckNum;
     pckNum = (pckNum == PTT_MAX_PACK_NUM) ? 0 : pckNum+1;
   }
-  *pPttBuff++ = LO_UINT16(ecg);  
-  *pPttBuff++ = HI_UINT16(ecg);
-  *pPttBuff++ = LO_UINT16(ppg);
-  *pPttBuff++ = HI_UINT16(ppg);
   
-  if(pPttBuff-pttBuff >= PTT_PACK_BYTE_NUM)
+  // 添加数据
+  *pBuffPos++ = LO_UINT16(ecg);  
+  *pBuffPos++ = HI_UINT16(ecg);
+  *pBuffPos++ = LO_UINT16(ppg);
+  *pBuffPos++ = HI_UINT16(ppg);
+  
+  // 包填满后，触发发送事件
+  if(pBuffPos - pckBuff >= PTT_PACK_BYTE_NUM)
   {
-    osal_memcpy(pttNoti.value, pttBuff, PTT_PACK_BYTE_NUM);
+    osal_memcpy(pttNoti.value, pckBuff, PTT_PACK_BYTE_NUM);
     pttNoti.len = PTT_PACK_BYTE_NUM;
     osal_set_event(taskId, PTT_PACKET_NOTI_EVT);
-    pPttBuff = pttBuff;
+    pBuffPos = pckBuff;
   }
 }
