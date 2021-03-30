@@ -184,11 +184,11 @@ extern void PTT_Init( uint8 task_id )
   //初始化IO管脚
   initIOPin();
   
-  // PTT应用初始化
-  PTTFunc_Init(taskID);  
-  
   // 初始化中断
   initInterrupt();
+  
+  // PTT应用初始化
+  PTTFunc_Init(taskID);  
   
   PTT_RegisterAppCBs( &pttServCBs );  
   

@@ -41,11 +41,6 @@ extern void PTTFunc_Init(uint8 taskID)
 { 
   taskId = taskID;  
   
-  // 判断MAX30102是否上电
-  while(!MAX30102_IsPowerOn())
-  {
-    delayus(1000);
-  }
   // 配置MAX30102
   MAX30102_Setup();
   // 进入低功耗模式
@@ -107,11 +102,20 @@ __interrupt void PORT0_ISR(void)
     P0IFG &= 0xFD;   //clear P0_1 IFG 
   }  
   
-  // P0_2中断, 即MAX30102数据中断  
+  // P0_2中断, 即MAX30102中断  
   if(P0IFG & 0x04)
   {
-    // 读PPG数据
-    ppgOk = MAX30102_ReadPpgSample(&ppg);
+    // 数据中断
+    if(MAX30102_IsPowerOn())
+    {
+      // 读PPG数据
+      ppgOk = MAX30102_ReadPpgSample(&ppg);
+    } 
+    // 上电中断
+    else
+    {
+      MAX30102_SetPowerOn(true);
+    }
     P0IFG &= 0xFB;   // clear P0_2 IFG
   }
   
