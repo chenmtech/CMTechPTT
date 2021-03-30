@@ -6,10 +6,6 @@
 #ifndef DEV_MAX30102_H
 #define DEV_MAX30102_H
 
-extern void MAX30102_SetPowerOn(bool powerOn);
-
-extern bool MAX30102_IsPowerOn();
-
 extern bool MAX30102_IsDATARDY();
 
 extern void MAX30102_Setup();

@@ -105,17 +105,7 @@ __interrupt void PORT0_ISR(void)
   // P0_2中断, 即MAX30102中断  
   if(P0IFG & 0x04)
   {
-    // 数据中断
-    if(MAX30102_IsPowerOn())
-    {
-      // 读PPG数据
-      ppgOk = MAX30102_ReadPpgSample(&ppg);
-    } 
-    // 上电中断
-    else
-    {
-      MAX30102_SetPowerOn(true);
-    }
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
     P0IFG &= 0xFB;   // clear P0_2 IFG
   }
   

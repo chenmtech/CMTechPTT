@@ -158,7 +158,6 @@ static const uint8 SLOT_RED_PILOT =		0x05;
 static const uint8 SLOT_IR_PILOT = 		0x06;
 static const uint8 SLOT_GREEN_PILOT = 		0x07;
 
-static bool isPowerOn = false;
 
 /*
  * 局部函数，函数功能见后面的函数定义
@@ -183,22 +182,18 @@ static void setPulseWidth(uint8 pulseWidth);
 static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
 static void setSLOT1(uint8 SLOT1);
-//static void setINTPin();
+static bool isPowerOn();
+
+// 判断是否上电
+static bool isPowerOn()
+{
+  uint8 intStatus1 = getINT1();
+  return (intStatus1 & 0x01);
+}
 
 /*
 * 公共函数
 */
-// 设置是否上电
-extern void MAX30102_SetPowerOn(bool powerOn)
-{
-  isPowerOn = powerOn;
-}
-
-// 判断是否上电
-extern bool MAX30102_IsPowerOn()
-{
-  return isPowerOn;
-}
 
 // 判断是否触发DATA RDY 中断
 extern bool MAX30102_IsDATARDY()
@@ -211,13 +206,13 @@ extern bool MAX30102_IsDATARDY()
 // 配置MAX30102
 extern void MAX30102_Setup()
 {
+  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
+  
   // 判断MAX30102是否上电
-  while(!isPowerOn)
+  while(!isPowerOn())
   {
     delayus(1000);
   }
-  
-  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
   // 软重启芯片
   softReset();
