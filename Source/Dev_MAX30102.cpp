@@ -219,8 +219,6 @@ extern void MAX30102_Setup()
   
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
-  getINT1();
-  
   // »Ì÷ÿ∆Ù–æ∆¨
   softReset();
   

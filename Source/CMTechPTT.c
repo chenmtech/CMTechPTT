@@ -310,6 +310,7 @@ static void gapStateCB( gaprole_States_t newState )
   {
     // 停止采样
     stopPttSampling();
+    
     // ADS1x9x进入Power-down模式
     ADS1x9x_PowerDown();
     
