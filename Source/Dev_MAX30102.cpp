@@ -218,7 +218,7 @@ extern void MAX30102_Setup()
   // 设置采样率为1kHz
   setSampleRate(MAX30102_SAMPLERATE_1000);
   // 设置样本平均个数为8，所以实际数据率为125Hz
-  setFIFOAverage(MAX30102_SAMPLEAVG_8);
+  setFIFOAverage(MAX30102_SAMPLEAVG_4);
   
   // 设置LED脉冲宽度，改变ADC输出有效位数
   setPulseWidth(MAX30102_PULSEWIDTH_16);

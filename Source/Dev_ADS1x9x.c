@@ -100,7 +100,7 @@ extern void ADS1x9x_PowerUp(void)
   ADS_RST_HIGH();    //PWDN/RESET ∏ﬂµÁ∆Ω
   delayus(50);
   
-  setRegsAsNormalECGSignal(125);
+  setRegsAsNormalECGSignal(250);
 }
 
 // start continuous sampling

@@ -33,6 +33,7 @@
 #include "Service_PTT.h"
 #include "App_PTTFunc.h"
 #include "Dev_ADS1x9x.h"
+#include "Dev_MAX30102.h"
 
 #define ADVERTISING_INTERVAL 320 // ad interval, units of 0.625ms
 #define ADVERTISING_DURATION 2000 // ad duration, units of ms
@@ -56,7 +57,7 @@ static uint16 gapConnHandle = INVALID_CONNHANDLE;
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "KM PTT"; // GGS device name
 static uint8 status = STATUS_PTT_STOP; // PTT sampling status
-static uint16 pttSampleRate = 125; // PTT real sample rate
+static uint16 pttSampleRate = 250; // PTT real sample rate
 
 // advertise data
 static uint8 advertData[] = 
@@ -226,8 +227,8 @@ static void initInterrupt()
   PICTL |= (1<<0);  //所有P0管脚都是下降沿触发
   
   //开P0.1, P0.2 INT中断
-  P0IEN |= 0x06;    
-  P0IE = 1;   
+  P0IEN |= 0x06; // P0各个管脚使能   
+  P0IE = 1; // P0总使能  
 }
 
 extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
@@ -299,7 +300,9 @@ static void gapStateCB( gaprole_States_t newState )
     // 让ADS1x9x从power-down模式退出
     ADS1x9x_PowerUp(); 
     // 进入standby模式
-    ADS1x9x_StandBy();  
+    //ADS1x9x_StandBy();  
+    
+    MAX30102_WakeUp();
   }
   // 断开连接
   else if(gapProfileState == GAPROLE_CONNECTED && 
@@ -309,6 +312,8 @@ static void gapStateCB( gaprole_States_t newState )
     stopPttSampling();
     // ADS1x9x进入Power-down模式
     ADS1x9x_PowerDown();
+    
+    MAX30102_Shutdown();
   }
   // if started
   else if (newState == GAPROLE_STARTED)

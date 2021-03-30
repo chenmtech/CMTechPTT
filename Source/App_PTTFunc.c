@@ -42,7 +42,10 @@ extern void PTTFunc_Init(uint8 taskID)
   taskId = taskID;  
   
   // 判断MAX30102是否上电
-  while(!MAX30102_IsPowerOn());
+  while(!MAX30102_IsPowerOn())
+  {
+    delayus(1000);
+  }
   // 配置MAX30102
   MAX30102_Setup();
   // 进入低功耗模式
@@ -67,8 +70,8 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppg = 0;
     
     // 唤醒两个终端
-    MAX30102_WakeUp();
-    ADS1x9x_WakeUp(); 
+    //MAX30102_WakeUp();
+    //ADS1x9x_WakeUp(); 
     
     // 启动采集
     ADS1x9x_StartConvert();
@@ -81,8 +84,8 @@ extern void PTTFunc_SetPttSampling(bool start)
     MAX30102_Stop();  
     
     // 进入低功耗模式
-    ADS1x9x_StandBy();
-    MAX30102_Shutdown();
+    //ADS1x9x_StandBy();
+    //MAX30102_Shutdown();
   }
 }
 
@@ -94,23 +97,23 @@ extern void PTTFunc_SendPttPacket(uint16 connHandle)
 #pragma vector = P0INT_VECTOR
 __interrupt void PORT0_ISR(void)
 { 
-  HAL_ENTER_ISR();  // Hold off interrupts.
-  
-  // P0_2中断, 即MAX30102数据中断  
-  if(P0IFG & 0x04)
-  {
-    // 读PPG数据
-    ppgOk = MAX30102_ReadPpgSample(&ppg);
-    P0IFG &= ~(1<<2);   // clear P0_2 IFG
-  }
+  HAL_ENTER_ISR();  // Hold off interrupts.  
   
   // P0_1中断, 即ADS1191数据中断
   if(P0IFG & 0x02)
   {
     // 读ECG数据
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
-    P0IFG &= ~(1<<1);   //clear P0_1 IFG 
+    P0IFG &= 0xFD;   //clear P0_1 IFG 
   }  
+  
+  // P0_2中断, 即MAX30102数据中断  
+  if(P0IFG & 0x04)
+  {
+    // 读PPG数据
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
+    P0IFG &= 0xFB;   // clear P0_2 IFG
+  }
   
   // PPG和ECG数据都有了，则处理数据
   if(ecgOk && ppgOk)
