@@ -69,21 +69,21 @@ static void setADSCtrlPin()
   P1 |= (1<<2);     //初始为高电平
   P1DIR |= (1<<2);  //Output
   
-//  //P0.1 DRDY管脚配置  
-//  //先关P0.1即DRDY中断
-//  P0IEN &= ~(1<<1);
-//  P0IFG &= ~(1<<1);   // clear P0_1 interrupt status flag
-//  P0IF = 0;   //clear P0 interrupt flag  
-//  
-//  //配置P0.1即DRDY 中断
-//  P0SEL &= ~(1<<1); //GPIO
-//  P0DIR &= ~(1<<1); //Input
-//  PICTL |= (1<<0);  //下降沿触发
-//  //////////////////////////
-//  
-//  //开P0.1 DRDY中断
-//  P0IEN |= (1<<1);    // P0_1 interrupt enable
-//  P0IE = 1;           // P0 interrupt enable
+  //P0.1 DRDY管脚配置  
+  //先关P0.1即DRDY中断
+  P0IEN &= ~(1<<1);
+  P0IFG &= ~(1<<1);   // clear P0_1 interrupt status flag
+  P0IF = 0;   //clear P0 interrupt flag  
+  
+  //配置P0.1即DRDY 中断
+  P0SEL &= ~(1<<1); //GPIO
+  P0DIR &= ~(1<<1); //Input
+  PICTL |= (1<<0);  //下降沿触发
+  //////////////////////////
+  
+  //开P0.1 DRDY中断
+  P0IEN |= (1<<1);    // P0_1 interrupt enable
+  P0IE = 1;           // P0 interrupt enable
 }
 
 //

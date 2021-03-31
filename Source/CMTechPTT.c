@@ -183,13 +183,13 @@ extern void PTT_Init( uint8 task_id )
   }
   
   //初始化IO管脚
-  initIOPin();  
+  initIOPin();    
   
   // PTT应用初始化
   PTTFunc_Init(taskID); 
   
   // 初始化中断
-  initInterrupt(); 
+  //initInterrupt(); 
   
   PTT_RegisterAppCBs( &pttServCBs );  
   
@@ -208,7 +208,7 @@ static void initIOPin()
   P2SEL = 0; 
 
   // P0.1设为输入，其他设为输出
-  P0DIR = 0xF9; 
+  P0DIR = 0xFD; 
   P1DIR = 0xFF; 
   P2DIR = 0x1F; 
 
@@ -221,14 +221,14 @@ static void initIOPin()
 static void initInterrupt()
 {  
   // 关P0.1中断
-  P0IEN &= 0xF9;
-  P0IFG &= 0xF9;  
+  P0IEN &= 0xFD;
+  P0IFG &= 0xFD;  
   P0IF = 0;   
   
   PICTL |= (1<<0);  //所有P0管脚都是下降沿触发
   
   //开P0.1 INT中断
-  P0IEN |= 0x06;  
+  P0IEN |= 0x02;  
   P0IE = 1; // P0总使能  
 }
 
@@ -300,9 +300,8 @@ static void gapStateCB( gaprole_States_t newState )
     
     // 让ADS1x9x从power-down模式退出
     ADS1x9x_PowerUp(); 
-    // 进入standby模式
-    //ADS1x9x_StandBy();
     
+    // 让MAX30102从shutdown模式退出
     MAX30102_WakeUp();
     
     delayus(2000);

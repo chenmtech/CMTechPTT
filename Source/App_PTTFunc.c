@@ -43,13 +43,13 @@ extern void PTTFunc_Init(uint8 taskID)
   
   // 配置MAX30102
   MAX30102_Setup();
+  // 进入低功耗模式
+  MAX30102_Shutdown();  
+  delayus(2000);  
   
   // 初始化ADS1x9x
-  ADS1x9x_Init();   
-  
-  // 进入低功耗模式
-  MAX30102_Shutdown();
-  
+  ADS1x9x_Init(); 
+  delayus(2000);
   // 进入Power-down模式
   ADS1x9x_PowerDown(); 
 }
@@ -74,10 +74,14 @@ extern void PTTFunc_SetPttSampling(bool start)
   else
   {    
     // 停止采集
+    P0IE = 0;
+    
     ADS1x9x_StopConvert();
     MAX30102_Stop();  
     
-    delayus(5000);
+    delayus(10000);
+    
+    P0IE = 1;
     
     // 进入低功耗模式
     //ADS1x9x_StandBy();
@@ -100,8 +104,8 @@ __interrupt void PORT0_ISR(void)
   HAL_ENTER_ISR();  // Hold off interrupts.  
   
   // P0_1中断, 即ADS1191数据中断
-  if(P0IFG & 0x02)
-  {
+  //if(P0IFG & 0x02)
+  //{
     // 读ECG数据
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
     // 读PPG数据
@@ -109,8 +113,8 @@ __interrupt void PORT0_ISR(void)
     // 处理数据
     processPttSignal(ecg, ppg);
     
-    P0IFG &= 0xFD;   //clear P0_1 IFG 
-  }  
+    P0IFG = 0;   //clear P0_1 IFG 
+  //}  
   
 //  // P0_2中断, 即MAX30102中断  
 //  if(P0IFG & 0x04)
