@@ -10,7 +10,6 @@
 #include "CMTechPTT.h"
 #include "Dev_MAX30102.h"
 #include "Dev_ADS1x9x.h"
-#include "hal_i2c.h"
 
 #define PTT_PACK_BYTE_NUM 17 // byte number per PTT packet, 1+4*4
 #define PTT_MAX_PACK_NUM 255 // max packet num
@@ -44,20 +43,19 @@ extern void PTTFunc_Init(uint8 taskID)
   
   // 配置MAX30102
   MAX30102_Setup();
+  
+  // 初始化ADS1x9x
+  ADS1x9x_Init();   
+  
   // 进入低功耗模式
   MAX30102_Shutdown();
   
-  // initilize the ADS1x9x
-  ADS1x9x_Init(); 
   // 进入Power-down模式
   ADS1x9x_PowerDown(); 
 }
 
 extern void PTTFunc_SetPttSampling(bool start)
 {
-  pckNum = 0;
-  pBuffPos = pckBuff;
-  osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
   if(start)
   {
     ecgOk = false;
@@ -79,10 +77,16 @@ extern void PTTFunc_SetPttSampling(bool start)
     ADS1x9x_StopConvert();
     MAX30102_Stop();  
     
+    delayus(5000);
+    
     // 进入低功耗模式
     //ADS1x9x_StandBy();
     //MAX30102_Shutdown();
   }
+  
+  pckNum = 0;
+  pBuffPos = pckBuff;
+  osal_clear_event(taskId, PTT_PACKET_NOTI_EVT);
 }
 
 extern void PTTFunc_SendPttPacket(uint16 connHandle)
