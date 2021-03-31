@@ -16,6 +16,7 @@
 #include "hci.h"
 #include "gapgattserver.h"
 #include "gattservapp.h"
+#include "cmutil.h"
 
 #if defined ( PLUS_BROADCASTER )
   #include "peripheralBroadcaster.h"
@@ -303,6 +304,8 @@ static void gapStateCB( gaprole_States_t newState )
     //ADS1x9x_StandBy();  
     
     MAX30102_WakeUp();
+    
+    delayus(2000);
   }
   // 断开连接
   else if(gapProfileState == GAPROLE_CONNECTED && 
@@ -314,6 +317,7 @@ static void gapStateCB( gaprole_States_t newState )
     // ADS1x9x进入Power-down模式
     ADS1x9x_PowerDown();
     
+    // MAX30102进入shutdown模式
     MAX30102_Shutdown();
   }
   // if started
