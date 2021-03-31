@@ -166,7 +166,7 @@ static void writeOneByte(uint8 reg, uint8 data);
 static uint8 readOneByte(uint8 reg);
 static void readMultipleBytes(uint8 reg, uint8 len, uint8* pBuff);
 static void bitMask(uint8 reg, uint8 mask, uint8 thing);
-//static uint8 getINT1(void);
+static uint8 getINT1(void);
 static uint8 getINT2(void);
 static void softReset();
 static void setLEDMode(uint8 mode);
@@ -342,7 +342,7 @@ static void bitMask(uint8 reg, uint8 mask, uint8 thing)
 }
 
 // 获取MAX30102_INTSTAT1寄存器值
-extern uint8 getINT1(void) {
+static uint8 getINT1(void) {
   return (readOneByte(MAX30102_INTSTAT1));
 }
 
@@ -510,18 +510,9 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
-  /*
-  uint8 ptRead = getReadPointer();
-  uint8 ptWrite = getWritePointer();
-  int8 num = ptWrite-ptRead;
-  if(num == 0) return false;
-  if(num < 0) num += 32; // 消除翻滚导致的ptWrite小于ptRead
-  // 如果有多余的数据，读出丢弃
-  while(num > 1)
-  {
-    readMultipleBytes(MAX30102_FIFODATA, 3, buff);
-  }
-  */
+  // 判断是否有新的数据
+  if(!(getINT1() & 0x40))
+    return false;
   
   // 读取数据
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);  

@@ -10,6 +10,7 @@
 #include "CMTechPTT.h"
 #include "Dev_MAX30102.h"
 #include "Dev_ADS1x9x.h"
+#include "hal_i2c.h"
 
 #define PTT_PACK_BYTE_NUM 17 // byte number per PTT packet, 1+4*4
 #define PTT_MAX_PACK_NUM 255 // max packet num
@@ -65,16 +66,12 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppg = 0;
     
     // 唤醒两个终端
-    MAX30102_WakeUp();
-    ADS1x9x_WakeUp(); 
+    //MAX30102_WakeUp();
+    //ADS1x9x_WakeUp(); 
     
     // 启动采集
     MAX30102_Start();
     ADS1x9x_StartConvert();
-    
-    P0IFG = 0;  
-    P0IF = 0;  
-    P0IE = 1;
   } 
   else
   {    
@@ -83,10 +80,8 @@ extern void PTTFunc_SetPttSampling(bool start)
     MAX30102_Stop();  
     
     // 进入低功耗模式
-    ADS1x9x_StandBy();
-    MAX30102_Shutdown();
-    
-    P0IE = 0;
+    //ADS1x9x_StandBy();
+    //MAX30102_Shutdown();
   }
 }
 
@@ -105,33 +100,29 @@ __interrupt void PORT0_ISR(void)
   {
     // 读ECG数据
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
-    ppg = getINT1();
-//    while(!(getINT1() & 0x40)) 
-//    {
-//      delayus(1000);
-//    }
+    // 读PPG数据
     ppgOk = MAX30102_ReadPpgSample(&ppg);
+    // 处理数据
     processPttSignal(ecg, ppg);
+    
     P0IFG &= 0xFD;   //clear P0_1 IFG 
   }  
   
-  /*
-  // P0_2中断, 即MAX30102中断  
-  if(P0IFG & 0x04)
-  {
-    ppgOk = MAX30102_ReadPpgSample(&ppg);
-    P0IFG &= 0xFB;   // clear P0_2 IFG
-  }
-  
-  // PPG和ECG数据都有了，则处理数据
-  if(ecgOk && ppgOk)
-  {
-    processPttSignal(ecg, ppg);
-    ecgOk = false;
-    ppgOk = false;
-  }
-  
-  */
+//  // P0_2中断, 即MAX30102中断  
+//  if(P0IFG & 0x04)
+//  {
+//    ppgOk = MAX30102_ReadPpgSample(&ppg);
+//    P0IFG &= 0xFB;   // clear P0_2 IFG
+//  }
+//  
+//  // PPG和ECG数据都有了，则处理数据
+//  if(ecgOk && ppgOk)
+//  {
+//    processPttSignal(ecg, ppg);
+//    ecgOk = false;
+//    ppgOk = false;
+//  }
+
   P0IF = 0;           //clear P0 interrupt flag
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  
@@ -147,7 +138,7 @@ static void processPttSignal(int16 ecg, uint16 ppg)
   }
   
   // 添加数据
-  *pBuffPos++ = LO_UINT16(ecg);  
+  *pBuffPos++ = LO_UINT16(ecg);
   *pBuffPos++ = HI_UINT16(ecg);
   *pBuffPos++ = LO_UINT16(ppg);
   *pBuffPos++ = HI_UINT16(ppg);

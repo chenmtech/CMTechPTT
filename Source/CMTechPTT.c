@@ -220,16 +220,16 @@ static void initIOPin()
 
 static void initInterrupt()
 {  
-  // 关P0.1, P0.2中断
-  P0IEN &= 0xF9;
-  P0IFG &= 0xF9;  
+  // 关P0.1中断
+  P0IEN &= 0xFD;
+  P0IFG &= 0xFD;  
   P0IF = 0;   
   
   PICTL |= (1<<0);  //所有P0管脚都是下降沿触发
   
-  //开P0.1, P0.2 INT中断
-  P0IEN |= 0x02; // P0各个管脚使能   
-  //P0IE = 1; // P0总使能  
+  //开P0.1 INT中断
+  P0IEN |= 0x02;  
+  P0IE = 1; // P0总使能  
 }
 
 extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
@@ -301,9 +301,9 @@ static void gapStateCB( gaprole_States_t newState )
     // 让ADS1x9x从power-down模式退出
     ADS1x9x_PowerUp(); 
     // 进入standby模式
-    ADS1x9x_StandBy();  
+    //ADS1x9x_StandBy();  
     
-    //MAX30102_WakeUp();
+    MAX30102_WakeUp();
     
     delayus(2000);
   }
