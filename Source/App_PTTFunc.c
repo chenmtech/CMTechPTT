@@ -65,12 +65,16 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppg = 0;
     
     // 唤醒两个终端
-    //MAX30102_WakeUp();
-    //ADS1x9x_WakeUp(); 
+    MAX30102_WakeUp();
+    ADS1x9x_WakeUp(); 
     
     // 启动采集
-    ADS1x9x_StartConvert();
     MAX30102_Start();
+    ADS1x9x_StartConvert();
+    
+    P0IFG = 0;  
+    P0IF = 0;  
+    P0IE = 1;
   } 
   else
   {    
@@ -79,8 +83,10 @@ extern void PTTFunc_SetPttSampling(bool start)
     MAX30102_Stop();  
     
     // 进入低功耗模式
-    //ADS1x9x_StandBy();
-    //MAX30102_Shutdown();
+    ADS1x9x_StandBy();
+    MAX30102_Shutdown();
+    
+    P0IE = 0;
   }
 }
 
@@ -99,9 +105,17 @@ __interrupt void PORT0_ISR(void)
   {
     // 读ECG数据
     ecgOk = ADS1x9x_ReadEcgSample(&ecg);
+    ppg = getINT1();
+//    while(!(getINT1() & 0x40)) 
+//    {
+//      delayus(1000);
+//    }
+    ppgOk = MAX30102_ReadPpgSample(&ppg);
+    processPttSignal(ecg, ppg);
     P0IFG &= 0xFD;   //clear P0_1 IFG 
   }  
   
+  /*
   // P0_2中断, 即MAX30102中断  
   if(P0IFG & 0x04)
   {
@@ -117,6 +131,7 @@ __interrupt void PORT0_ISR(void)
     ppgOk = false;
   }
   
+  */
   P0IF = 0;           //clear P0 interrupt flag
   
   HAL_EXIT_ISR();   // Re-enable interrupts.  

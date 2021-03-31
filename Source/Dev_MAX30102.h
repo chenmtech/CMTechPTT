@@ -22,5 +22,7 @@ extern float MAX30102_ReadTemperature();
 
 extern bool MAX30102_ReadPpgSample(uint16* pData);
 
+extern uint8 getINT1(void);
+
 #endif
 

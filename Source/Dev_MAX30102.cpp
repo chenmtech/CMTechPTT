@@ -166,7 +166,7 @@ static void writeOneByte(uint8 reg, uint8 data);
 static uint8 readOneByte(uint8 reg);
 static void readMultipleBytes(uint8 reg, uint8 len, uint8* pBuff);
 static void bitMask(uint8 reg, uint8 mask, uint8 thing);
-static uint8 getINT1(void);
+//static uint8 getINT1(void);
 static uint8 getINT2(void);
 static void softReset();
 static void setLEDMode(uint8 mode);
@@ -342,7 +342,7 @@ static void bitMask(uint8 reg, uint8 mask, uint8 thing)
 }
 
 // »ñÈ¡MAX30102_INTSTAT1¼Ä´æÆ÷Öµ
-static uint8 getINT1(void) {
+extern uint8 getINT1(void) {
   return (readOneByte(MAX30102_INTSTAT1));
 }
 
