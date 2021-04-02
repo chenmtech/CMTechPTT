@@ -6,8 +6,6 @@
 #ifndef DEV_MAX30102_H
 #define DEV_MAX30102_H
 
-extern bool MAX30102_IsDATARDY();
-
 extern void MAX30102_Setup();
 
 extern void MAX30102_WakeUp();

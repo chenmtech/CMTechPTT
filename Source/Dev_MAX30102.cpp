@@ -181,6 +181,7 @@ static void setSampleRate(uint8 sampleRate);
 static void setPulseWidth(uint8 pulseWidth);
 static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
+static void enableFIFORollover(void);
 static void setSLOT1(uint8 SLOT1);
 static bool isPowerOn();
 
@@ -195,24 +196,16 @@ static bool isPowerOn()
 * 公共函数
 */
 
-// 判断是否触发DATA RDY 中断
-extern bool MAX30102_IsDATARDY()
-{
-  IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
-  uint8 intStatus1 = getINT1();
-  return (intStatus1 & 0x40);
-}
-
 // 配置MAX30102
 extern void MAX30102_Setup()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
   // 判断MAX30102是否上电
-  while(!isPowerOn())
-  {
-    delayus(1000);
-  }
+//  while(!isPowerOn())
+//  {
+//    delayus(1000);
+//  }
   
   // 软重启芯片
   softReset();
@@ -223,8 +216,7 @@ extern void MAX30102_Setup()
   //setSLOT1(SLOT_RED_LED);
   // 设置采样率为1kHz
   setSampleRate(MAX30102_SAMPLERATE_1000);
-  // 设置样本平均个数为4，所以实际数据率为250Hz
-  setFIFOAverage(MAX30102_SAMPLEAVG_4);
+  setFIFOAverage(MAX30102_SAMPLEAVG_1);
   
   // 设置LED脉冲宽度，改变ADC输出有效位数
   setPulseWidth(MAX30102_PULSEWIDTH_16);
@@ -235,6 +227,8 @@ extern void MAX30102_Setup()
   // 设置LED脉冲幅度，数值乘以0.2就是供电电流值mA
   setPulseAmplitudeRed(0x0A); 
   setPulseAmplitudeIR(0x0A);
+  
+  enableFIFORollover();
   
   // 重置FIFO  
   clearFIFO();
@@ -503,6 +497,11 @@ static uint8 getReadPointer()
   return readOneByte(MAX30102_FIFOREADPTR);
 }
 
+static void setReadPointer(uint8 ptRead)
+{
+  writeOneByte(MAX30102_FIFOREADPTR, ptRead);
+}
+
 static uint8 buff[3] = {0};
 
 // 读取最新的一个PPG数据，假设只有一个通道数据
@@ -511,8 +510,11 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
   // 判断是否有新的数据
-  if(!(getINT1() & 0x40))
-    return false;
+  int8 ptWrite = getWritePointer();
+  if(ptWrite == 0)
+    setReadPointer(31);
+  else
+    setReadPointer(ptWrite-1);
   
   // 读取数据
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);  
