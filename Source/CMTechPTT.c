@@ -186,10 +186,10 @@ extern void PTT_Init( uint8 task_id )
   initIOPin(); 
   
   // 初始化中断
-  initInterrupt(); 
+  initInterrupt();
   
   // PTT应用初始化
-  PTTFunc_Init(taskID);    
+  PTTFunc_Init(taskID);  
   
   PTT_RegisterAppCBs( &pttServCBs );  
   
@@ -229,7 +229,7 @@ static void initInterrupt()
   
   //开P0.1 INT中断
   P0IEN |= 0x02;  
-  P0IE = 0; // 关P0总中断  
+  P0IE = 1; // 关P0总中断  
 }
 
 extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )

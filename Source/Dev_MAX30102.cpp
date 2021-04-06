@@ -211,8 +211,8 @@ extern void MAX30102_Setup()
   setADCRange(MAX30102_ADCRANGE_2048);
   
   // 设置LED脉冲幅度，数值乘以0.2就是供电电流值mA
-  setPulseAmplitudeRed(0x0A); 
-  setPulseAmplitudeIR(0x0A);
+  setPulseAmplitudeRed(0x09); 
+  setPulseAmplitudeIR(0x09);
   
   enableFIFORollover();
   

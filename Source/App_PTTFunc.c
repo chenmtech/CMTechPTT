@@ -41,15 +41,18 @@ extern void PTTFunc_Init(uint8 taskID)
 { 
   taskId = taskID;  
   
-  // 初始化ADS1x9x
-  ADS1x9x_Init(); 
-  // 进入Power-down模式
-  ADS1x9x_PowerDown(); 
-  
+  MAX30102_WakeUp();
   // 配置MAX30102
   MAX30102_Setup();
-  // 进入低功耗模式
+  // 进入shutdown模式
   MAX30102_Shutdown();  
+  delayus(2000);  
+  
+  // 初始化ADS1x9x
+  ADS1x9x_Init(); 
+  ADS1x9x_PowerUp();
+  // 进入Power-down模式
+  ADS1x9x_PowerDown();   
   delayus(2000);  
 }
 
