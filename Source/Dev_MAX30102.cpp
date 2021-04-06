@@ -183,14 +183,7 @@ static void setPulseAmplitudeRed(uint8 amplitude);
 static void setPulseAmplitudeIR(uint8 amplitude);
 static void enableFIFORollover(void);
 static void setSLOT1(uint8 SLOT1);
-static bool isPowerOn();
 
-// 判断是否上电
-static bool isPowerOn()
-{
-  uint8 intStatus1 = getINT1();
-  return (intStatus1 & 0x01);
-}
 
 /*
 * 公共函数
@@ -201,19 +194,12 @@ extern void MAX30102_Setup()
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
-  // 判断MAX30102是否上电
-//  while(!isPowerOn())
-//  {
-//    delayus(1000);
-//  }
-  
   // 软重启芯片
   softReset();
   
   // 设置仅开启红色LED，即心率模式
   setLEDMode(MAX30102_MODE_REDONLY);
-  // 设置时间槽
-  //setSLOT1(SLOT_RED_LED);
+  
   // 设置采样率为1kHz
   setSampleRate(MAX30102_SAMPLERATE_1000);
   setFIFOAverage(MAX30102_SAMPLEAVG_1);
@@ -509,14 +495,13 @@ extern bool MAX30102_ReadPpgSample(uint16* pData)
 {
   IIC_Enable(I2C_ADDR, i2cClock_267KHZ);
   
-  // 判断是否有新的数据
   int8 ptWrite = getWritePointer();
   if(ptWrite == 0)
     setReadPointer(31);
   else
     setReadPointer(ptWrite-1);
   
-  // 读取数据
+  // 读数据
   readMultipleBytes(MAX30102_FIFODATA, 3, buff);  
   uint32 data32 = BUILD_UINT32(buff[2], buff[1], buff[0], 0x00);
   *pData = (uint16)(data32>>2);

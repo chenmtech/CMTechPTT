@@ -299,12 +299,12 @@ static void gapStateCB( gaprole_States_t newState )
     GAPRole_GetParameter( GAPROLE_CONNHANDLE, &gapConnHandle );
     
     // 让ADS1x9x从power-down模式退出
-    ADS1x9x_PowerUp(); 
+    ADS1x9x_PowerUp();     
+    
+    delayus(2000);
     
     // 让MAX30102从shutdown模式退出
     MAX30102_WakeUp();
-    
-    delayus(2000);
   }
   
   // 断开连接
@@ -315,7 +315,9 @@ static void gapStateCB( gaprole_States_t newState )
     stopPttSampling();
     
     // ADS1x9x进入Power-down模式
-    ADS1x9x_PowerDown();
+    ADS1x9x_PowerDown();   
+    
+    delayus(2000);
     
     // MAX30102进入shutdown模式
     MAX30102_Shutdown();

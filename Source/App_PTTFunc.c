@@ -62,10 +62,6 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppgOk = false;
     ppg = 0;
     
-    // 唤醒两个终端
-    //MAX30102_WakeUp();
-    //ADS1x9x_WakeUp(); 
-    
     P0IE = 1; // 开P0总中断
     
     // 启动采集
@@ -83,10 +79,6 @@ extern void PTTFunc_SetPttSampling(bool start)
     MAX30102_Stop();  
     
     P0IE = 1;
-    
-    // 进入低功耗模式
-    //ADS1x9x_StandBy();
-    //MAX30102_Shutdown();
   }
   
   pckNum = 0;
@@ -116,21 +108,6 @@ __interrupt void PORT0_ISR(void)
     
     P0IFG = 0;   //clear P0_1 IFG 
   //}  
-  
-//  // P0_2中断, 即MAX30102中断  
-//  if(P0IFG & 0x04)
-//  {
-//    ppgOk = MAX30102_ReadPpgSample(&ppg);
-//    P0IFG &= 0xFB;   // clear P0_2 IFG
-//  }
-//  
-//  // PPG和ECG数据都有了，则处理数据
-//  if(ecgOk && ppgOk)
-//  {
-//    processPttSignal(ecg, ppg);
-//    ecgOk = false;
-//    ppgOk = false;
-//  }
 
   P0IF = 0;           //clear P0 interrupt flag
   
