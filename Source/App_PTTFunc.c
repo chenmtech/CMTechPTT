@@ -41,19 +41,16 @@ extern void PTTFunc_Init(uint8 taskID)
 { 
   taskId = taskID;  
   
-  /*****这一段是有效的******/
+  // 初始化ADS1x9x
+  ADS1x9x_Init(); 
+  // 进入Power-down模式
+  ADS1x9x_PowerDown(); 
+  
   // 配置MAX30102
   MAX30102_Setup();
   // 进入低功耗模式
   MAX30102_Shutdown();  
   delayus(2000);  
-  /************************/
-  
-  // 初始化ADS1x9x
-  ADS1x9x_Init(); 
-  delayus(2000);
-  // 进入Power-down模式
-  ADS1x9x_PowerDown(); 
 }
 
 extern void PTTFunc_SetPttSampling(bool start)
@@ -84,6 +81,8 @@ extern void PTTFunc_SetPttSampling(bool start)
     // 停止采集
     ADS1x9x_StopConvert();
     MAX30102_Stop();  
+    
+    P0IE = 1;
     
     // 进入低功耗模式
     //ADS1x9x_StandBy();
