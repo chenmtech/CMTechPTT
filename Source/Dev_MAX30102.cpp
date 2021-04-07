@@ -197,8 +197,18 @@ extern void MAX30102_Setup()
   // 软重启芯片
   softReset();
   
+  
+  // 这个适用于我自己买的模块
   // 设置仅开启红色LED，即心率模式
-  setLEDMode(MAX30102_MODE_REDONLY);
+  //setLEDMode(MAX30102_MODE_REDONLY);
+  
+  // 这个适用于学校买的模块
+  // 设置开启多LED模式
+  setLEDMode(MAX30102_MODE_MULTILED);
+  // 设置时间槽
+  setSLOT1(SLOT_IR_LED);
+  
+  
   
   // 设置采样率为1kHz
   setSampleRate(MAX30102_SAMPLERATE_1000);
