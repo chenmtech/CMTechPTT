@@ -41,7 +41,6 @@ extern void PTTFunc_Init(uint8 taskID)
 { 
   taskId = taskID;  
   
-  MAX30102_WakeUp();
   // 配置MAX30102
   MAX30102_Setup();
   // 进入shutdown模式
@@ -54,6 +53,8 @@ extern void PTTFunc_Init(uint8 taskID)
   // 进入Power-down模式
   ADS1x9x_PowerDown();   
   delayus(2000);  
+  // 进入Power-down模式
+  ADS1x9x_PowerDown();   
 }
 
 extern void PTTFunc_SetPttSampling(bool start)
@@ -65,10 +66,14 @@ extern void PTTFunc_SetPttSampling(bool start)
     ppgOk = false;
     ppg = 0;
     
-    P0IE = 1; // 开P0总中断
-    
+    // 让MAX30102从shutdown模式退出
+    MAX30102_WakeUp();
     // 启动采集
     MAX30102_Start();
+    //delayus(1000);
+    
+    // 让ADS1x9x从power-down模式退出
+    ADS1x9x_PowerUp();     
     ADS1x9x_StartConvert();
   } 
   else
@@ -79,9 +84,19 @@ extern void PTTFunc_SetPttSampling(bool start)
     
     // 停止采集
     ADS1x9x_StopConvert();
-    MAX30102_Stop();  
+    MAX30102_Stop();      
+    
+    delayus(10000); // 延时等待中断服务程序结束
     
     P0IE = 1;
+    delayus(2000);
+    
+    ADS1x9x_StandBy();    
+    // ADS1x9x进入Power-down模式
+    ADS1x9x_PowerDown();
+    delayus(2000);
+    // MAX30102进入shutdown模式
+    MAX30102_Shutdown();
   }
   
   pckNum = 0;

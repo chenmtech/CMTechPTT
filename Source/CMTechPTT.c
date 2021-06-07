@@ -185,11 +185,15 @@ extern void PTT_Init( uint8 task_id )
   //初始化IO管脚
   initIOPin(); 
   
-  // 初始化中断
-  initInterrupt();
+  P0IE = 0; // 关P0总中断  
   
   // PTT应用初始化
   PTTFunc_Init(taskID);  
+  
+  // 初始化中断
+  initInterrupt();
+  
+  P0IE = 1; // 开P0总中断  
   
   PTT_RegisterAppCBs( &pttServCBs );  
   
@@ -229,7 +233,6 @@ static void initInterrupt()
   
   //开P0.1 INT中断
   P0IEN |= 0x02;  
-  P0IE = 1; // 关P0总中断  
 }
 
 extern uint16 PTT_ProcessEvent( uint8 task_id, uint16 events )
@@ -299,12 +302,14 @@ static void gapStateCB( gaprole_States_t newState )
     GAPRole_GetParameter( GAPROLE_CONNHANDLE, &gapConnHandle );
     
     // 让ADS1x9x从power-down模式退出
-    ADS1x9x_PowerUp();     
+    //ADS1x9x_PowerUp();     
     
-    delayus(2000);
+    //delayus(2000);
     
     // 让MAX30102从shutdown模式退出
-    MAX30102_WakeUp();
+    //MAX30102_WakeUp();   
+    
+    //delayus(2000);
   }
   
   // 断开连接
@@ -315,12 +320,12 @@ static void gapStateCB( gaprole_States_t newState )
     stopPttSampling();
     
     // ADS1x9x进入Power-down模式
-    ADS1x9x_PowerDown();   
+    //ADS1x9x_PowerDown();   
     
-    delayus(2000);
+    //delayus(2000);
     
     // MAX30102进入shutdown模式
-    MAX30102_Shutdown();
+    //MAX30102_Shutdown();
   }
   // if started
   else if (newState == GAPROLE_STARTED)
