@@ -41,9 +41,9 @@
 #define ADVERTISING_OFFTIME 8000 // ad offtime to wait for a next ad, units of ms
 
 // connection parameter in PTT mode
-#define PTT_MODE_MIN_INTERVAL 16  // unit: 1.25ms
-#define PTT_MODE_MAX_INTERVAL 32  // unit: 1.25ms
-#define PTT_MODE_SLAVE_LATENCY 4
+#define PTT_MODE_MIN_INTERVAL 20  // unit: 1.25ms
+#define PTT_MODE_MAX_INTERVAL 20  // unit: 1.25ms
+#define PTT_MODE_SLAVE_LATENCY 6
 #define PTT_MODE_CONNECT_TIMEOUT 100 // unit: 10ms, If no connection event occurred during this timeout, the connect will be shut down.
 
 #define CONN_PAUSE_PERIPHERAL 4  // the pause time from the connection establishment to the update of the connection parameters
